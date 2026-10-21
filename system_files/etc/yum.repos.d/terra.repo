@@ -1,4 +1,10 @@
-# Do not modify this file. If you want to add modifications to the repository configurations, add them in /etc/dnf/repos.override.d/
+# Baked copy of the Terra repo, MODIFIED from the upstream file:
+# gpgcheck/repo_gpgcheck set to 0 because bootc-image-builder's manifest
+# step runs dnf in a context where file:// GPG keys from the image's /etc
+# are unreadable, and dnf5 does NOT honor /etc/dnf/repos.override.d
+# (dnf4-only feature). Packages are GPG-verified during the container
+# build, where the key IS readable. Revert to gpgcheck=1 if you never
+# build ISOs with bootc-image-builder.
 
 [terra]
 name=Terra $releasever
@@ -6,9 +12,9 @@ name=Terra $releasever
 metalink=https://tetsudou.fyralabs.com/metalink?repo=terra$releasever&arch=$basearch
 metadata_expire=6h
 type=rpm
-gpgcheck=1
+gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-terra$releasever
-repo_gpgcheck=1
+repo_gpgcheck=0
 enabled=1
 enabled_metadata=1
 countme=1
@@ -19,8 +25,8 @@ name=Terra $releasever - Source
 metalink=https://tetsudou.fyralabs.com/metalink?repo=terra$releasever-source&arch=$basearch
 metadata_expire=6h
 type=rpm
-gpgcheck=1
+gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-terra$releasever-source
-repo_gpgcheck=1
+repo_gpgcheck=0
 enabled=0
 enabled_metadata=0

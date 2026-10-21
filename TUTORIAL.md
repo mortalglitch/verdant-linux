@@ -30,11 +30,11 @@ dnf5 -y install some-package
   ```
 - Third-party repo (Terra pattern): install the repo-definition rpm first
   (`--repofrompath` bootstrap), then install normally — see the Terra block in build.sh.
-  Note: `system_files/etc/dnf/repos.override.d/terra-gpgcheck.repo` relaxes
-  `gpgcheck` for the Terra repo because bootc-image-builder's manifest step
-  can't read the baked `file://` GPG key (Terra has no https key URL). Packages
-  are still GPG-verified during the container build. Remove that override file
-  if you want strict checking back.
+  Note: the baked `system_files/etc/yum.repos.d/terra.repo` has `gpgcheck=0`
+  because bootc-image-builder's manifest step can't read the baked `file://`
+  GPG key, and dnf5 does NOT support /etc/dnf/repos.override.d (dnf4-only).
+  Packages are still GPG-verified during the container build. Revert to
+  gpgcheck=1 if you only build container images, never ISOs.
 
 ## 2. Add a config file / dotfile
 Copy it into the skel tree so the installed user gets it in their home:
