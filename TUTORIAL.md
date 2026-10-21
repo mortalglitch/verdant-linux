@@ -51,8 +51,8 @@ cp ~/.local/bin/ocr-region system_files/etc/skel/.local/bin/
 chmod +x system_files/etc/skel/.local/bin/ocr-region
 ```
 Then add its runtime deps to build.sh. Find package names for any command the script
-uses: `rpm -qf $(command -v <cmd>)` (e.g. ocr-region needs hyprpicker, slurp, grim,
-tesseract, wl-clipboard, libnotify).
+uses: `rpm -qf $(command -v <cmd>)` (e.g. ocr-region needs grim, tesseract,
+wl-clipboard, libnotify).
 
 ## 4. Add an on-demand tool (just recipe)
 For tools that should be *available* rather than *installed* (the starship pattern):

@@ -49,10 +49,7 @@ enabled=1
 | ghostty | `ghostty-1.3.1-4.fc44` (**Fedora rpm** → `dnf5 install ghostty`); config `~/.config/ghostty/` = `config.ghostty` (theme = noctalia) + `themes/noctalia`, 8 K; verified loading via `ghostty +show-config` |
 | starship | `starship 1.27.0` via **Homebrew** (`/home/linuxbrew/.linuxbrew/bin/starship`); **not in Fedora repos** (`dnf5 repoquery starship` → 0); `~/.config/starship.toml` (187 lines); `.bashrc:28` = `eval "$(starship init bash)"` |
 | btop | `btop-1.4.7-1.fc44` (**Fedora rpm**); config `~/.config/btop/` = `btop.conf` (color_theme = "noctalia") + `themes/` |
-| ocr-region | `~/.local/bin/ocr-region`: hyprpicker screen freeze → slurp selection → grim capture → tesseract OCR → wl-copy → notify-send; deps all Fedora rpms: hyprpicker 0.4.7, slurp 1.5.0, grim 1.5.0, tesseract 5.5.3, wl-clipboard 2.2.1, libnotify 0.8.8 |
-
-Note: ocr-region's freeze step (`hyprpicker -r -z`) is Hyprland-specific — under Umbriel it
-degrades gracefully (no freeze overlay; OCR still works).
+| ocr-region | `~/.local/bin/ocr-region`: `grim -s` (interactive selection + capture) → tesseract OCR → wl-copy → notify-send; deps all Fedora rpms: grim 1.5.0, tesseract 5.5.3, wl-clipboard 2.2.1, libnotify 0.8.8 (no hyprpicker/slurp — `grim -s` replaces the freeze+select dance) |
 
 ### Round-2 additions (verified 2026-10-20)
 | Item | State on this machine |
@@ -153,7 +150,7 @@ dnf5 -y install umbriel-nightly noctalia
 # --- ghostty, btop, just, + ocr-region deps (all Fedora repos) ---
 # (gedit: NOT in the silverblue base — verified in the image — install explicitly)
 dnf5 -y install ghostty btop just gedit
-dnf5 -y install hyprpicker slurp grim tesseract wl-clipboard libnotify
+dnf5 -y install grim tesseract wl-clipboard libnotify
 
 # --- flatpak + Bazaar app store ---
 # flatpak ships in the silverblue base (verify; this is a no-op if so)
@@ -194,7 +191,7 @@ Notes:
 | ghostty 1.3.1 | Fedora rpm + `~/.config/ghostty/` (noctalia theme) | system (dnf5) + `/etc/skel/.config/ghostty/` |
 | starship 1.27.0 | Homebrew here; **not in Fedora repos** | `/etc/skel/.justfile` recipe `just starship` (brew or pinned release download) + `.bashrc` init line; config baked via skel |
 | btop 1.4.7 | Fedora rpm + `~/.config/btop/` (noctalia theme) | system (dnf5) + `/etc/skel/.config/btop/` |
-| ocr-region | `~/.local/bin/ocr-region` + hyprpicker/slurp/grim/tesseract/wl-clipboard/libnotify | `/etc/skel/.local/bin/ocr-region` + system (dnf5) |
+| ocr-region | `~/.local/bin/ocr-region` + grim/tesseract/wl-clipboard/libnotify | `/etc/skel/.local/bin/ocr-region` + system (dnf5) |
 | flatpak 1.18.x | (ships in silverblue base — verify at build; `dnf5 install flatpak` is a no-op if so) | system; remotes in image `/var/lib/flatpak/repo/config` |
 | Bazaar 0.9.9 | `io.github.kolunmi.Bazaar` from Flathub | installed at build time (`flatpak install --system`; `/var/lib/flatpak` carries into the installed system's `/var` subvolume) |
 | Homebrew (bundled version) | `ghcr.io/ublue-os/brew` image: tarball + `brew-setup.service` + profile.d + timers | system (baked archive + first-boot service) |
