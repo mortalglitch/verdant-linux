@@ -1,0 +1,118 @@
+config_version = 15
+
+[accessibility]
+ui_scale = 1.2000000104308128
+
+[bar.default]
+center = [ "clock", "wallpaper", "wallhaven" ]
+start = [ "launcher", "keys", "workspaces" ]
+
+[idle]
+behavior_order = [ "lock", "screen-off", "lock-and-suspend" ]
+
+    [idle.behavior.lock]
+    action = "lock"
+    enabled = true
+    timeout = 600.0
+
+    [idle.behavior.lock-and-suspend]
+    action = "lock_and_suspend"
+    enabled = false
+    timeout = 900.0
+
+    [idle.behavior.screen-off]
+    action = "screen_off"
+    enabled = true
+    timeout = 660.0
+
+[lockscreen_widgets]
+enabled = false
+schema_version = 2
+widget_order = [ "lockscreen-login-box@eDP-1" ]
+
+    [lockscreen_widgets.grid]
+    cell_size = 16
+    major_interval = 4
+    visible = true
+
+    [lockscreen_widgets.widget."lockscreen-login-box@eDP-1"]
+    box_height = 196.0
+    box_width = 810.0
+    cx = 1066.5
+    cy = 1090.3939208984375
+    output = "eDP-1"
+    placement_height = 1333.0
+    placement_width = 2133.0
+    rotation = 0.0
+    type = "login_box"
+
+        [lockscreen_widgets.widget."lockscreen-login-box@eDP-1".settings]
+        background_color = "surface_variant"
+        background_opacity = 0.88
+        background_radius = 12.0
+        center_password_text = false
+        input_opacity = 1.0
+        input_radius = 6.0
+        layout = "regular"
+        show_caps_lock = true
+        show_keyboard_layout = true
+        show_login_button = true
+        show_media = true
+        show_session_buttons = true
+        show_unlock_hint = true
+        show_weather = true
+
+[plugin_settings."linux-fertxo/hyprland-visual-editor"]
+is_system_active = true
+
+[plugin_settings."noctalia/wallhaven"]
+api_key = "REDACTED"
+download_dir = "/home/mortalglitch/Pictures/Wallpapers"
+
+[plugins]
+enabled = [ "mortalglitch/keymap", "noctalia/wallhaven" ]
+
+[shell]
+font_family = "Caladea"
+telemetry_enabled = true
+
+    [shell.panel]
+    transparency_mode = "glass"
+
+    [shell.screenshot]
+    directory = "/home/mortalglitch/Pictures/Screenshots"
+
+[theme]
+builtin = "Tokyo-Night"
+community_palette = "Osaka jade"
+mode = "light"
+source = "wallpaper"
+wallpaper_scheme = "m3-monochrome"
+
+    [theme.templates]
+    builtin_ids = [ "btop", "gtk3", "gtk4", "ghostty", "hyprland", "umbriel" ]
+    community_ids = [ "brave", "zen-browser", "neovim" ]
+
+[wallpaper]
+directory = "/home/mortalglitch/Pictures/Wallpapers"
+
+    [wallpaper.default]
+    path = "/home/mortalglitch/Pictures/Wallpapers/Eco-Futurist Farm Village Harvest.png"
+
+    [wallpaper.last]
+    path = "/home/mortalglitch/Pictures/Wallpapers/Eco-Futurist Farm Village Harvest.png"
+
+    [wallpaper.monitors.eDP-1]
+    path = "/home/mortalglitch/Pictures/Wallpapers/Eco-Futurist Farm Village Harvest.png"
+
+[widget.clock]
+format = "{:%A} - {:%Y-%m-%d} - {:%H:%M}"
+
+[widget.keys]
+type = "mortalglitch/keymap:keys"
+
+[widget.wallhaven]
+type = "noctalia/wallhaven:wallhaven"
+
+[widget.workspaces]
+hide_when_empty = true

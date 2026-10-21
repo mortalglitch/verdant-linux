@@ -1,0 +1,11 @@
+#!/bin/bash
+# ocr-region: select a screen region and OCR it to the clipboard.
+# grim -s (interactive selection + capture) -> tesseract -> wl-copy.
+# Extra languages: export OCR_LANGS="eng+deu" (needs tesseract-langpack-*).
+
+TEXT=$(grim -s - | tesseract stdin stdout --oem 1 --psm 6 -l "${OCR_LANGS:-eng}" --dpi 300 -c preserve_interword_spaces=1 2>/dev/null) || exit 1
+
+[[ -z $TEXT ]] && exit 1
+
+printf "%s" "$TEXT" | wl-copy
+notify-send "Text Extraction" "Copied text from selection to clipboard"

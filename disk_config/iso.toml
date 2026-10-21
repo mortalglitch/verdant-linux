@@ -1,0 +1,3 @@
+# Local personal ISO: no installer customizations.
+# Standard anaconda installer; user picks disk + creates user;
+# installs the embedded umbrielblue image.

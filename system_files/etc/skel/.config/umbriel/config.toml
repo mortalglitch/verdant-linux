@@ -1,0 +1,320 @@
+# ============================================================================
+#  Umbriel  —  ported from your Hyprland/Noctalia Lua config
+#  source : ~/.config/hypr/          (Lua, split files)
+#  target : ~/.config/umbriel/config.toml   (this file)
+#  date   : 2026-10-17
+#
+#  Live-reload : edit + save, Umbriel picks it up.
+#  Validate    : umbriel config validate -c ~/.config/umbriel/config.toml
+#  Log         : journalctl -u umbriel
+#
+#  Legend  [OK]   exact port
+#          [TUNE] re-derived — adjust by feel
+#          [GAP]  no 1:1 Umbriel equivalent (noted)
+#
+#  Can be split into files with  [include]  "dir/other.toml"  later.
+# ============================================================================
+
+# Reveal transition (workspace_wipe) — disabled per your call. To re-enable:
+#   uncomment the [include] below, and set [animation.workspaces] to
+#   style = "reveal" / effect = "workspace_wipe".
+# [include]
+# files = ["/usr/share/umbriel/effects/animation/workspace_wipe/effect.toml"]
+
+# ----------------------------------------------------------------------------
+#  [TUNE] Output scale — eDP-1 was 1.0; bumped to 1.2 (your 1.15~1.25 range).
+#  Dial to taste: 1.15 (subtle) → 1.25 (largest).  Live-reloads on save.
+# ----------------------------------------------------------------------------
+[output."eDP-1"]
+scale = 1.2
+workspaces = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
+# The above renames the workspaces but makes it a fixed list. This will need to be deleted to return to a dynamic list.
+
+[general]
+mod_key = "Super"
+# [OK]  your general.layout = "dwindle"  (moved to [layout] below)
+# [OK]  xwayland force_zero_scaling = true
+xwayland_native_resolution = true
+# [OK]  suppress maximize before first buffer (your "suppress-maximize-events")
+honor_restored_maximize = false
+# [OK]  autostart noctalia
+autostart = ["noctalia"]
+# [GAP] force_default_wallpaper / disable_hyprland_logo / render_ahead — no equivalents
+# [TUNE] your allow_tearing = false; Umbriel VRR is adaptive_vsync (default true).
+#        Set to false if you want tearing fully off on a VRR panel.
+# adaptive_vsync = true
+
+# ----------------------------------------------------------------------------
+#  [OK]  Layout — dwindle + gaps
+#  Hyprland used gaps_in=5 / gaps_out=8; Umbriel uses ONE gap (set to inner).
+#  [TUNE] raise to 8 if you want the outer spacing back.
+# ----------------------------------------------------------------------------
+[layout]
+mode = "dwindle"
+gap = 5
+
+[layout.dwindle]
+preserve_split = true        # [OK]
+
+# ----------------------------------------------------------------------------
+#  [OK]  Input
+# ----------------------------------------------------------------------------
+[input.keyboard]
+layout = "us"                # [OK]  kb_layout = us
+
+[input.focus]
+follows_mouse = true         # [OK]  follow_mouse = 1
+
+[input.touchpad]
+natural_scroll = true        # [OK]  touchpad.natural_scroll
+
+[input.mouse]
+sensitivity = 0.0            # [OK]  sensitivity = 0
+
+# ----------------------------------------------------------------------------
+#  [OK]  Appearance — borders / corners / blur / shadow
+#  Hyprland: border_size=2, rounding=10, blur size=3 vibrancy=0.17,
+#            shadow enabled range=4 color=0xee1a1a1a
+# ----------------------------------------------------------------------------
+[appearance]
+border_width = 2
+corner_radius = 10
+# [GAP] rounding_power=2 — Umbriel radius is a plain value, no power
+
+[appearance.blur]
+enabled = true
+radius = 3                   # [OK]  blur.size
+saturation = 0.17            # [OK]  blur.vibrancy
+
+[appearance.shadow]
+enabled = true
+softness = 4                 # [OK]  shadow.range
+# [GAP] shadow.render_power=3 — no direct equivalent (intensity)
+
+# ----------------------------------------------------------------------------
+#  [OK]  Colors (from your decorations.lua look-and-feel)
+#  Your ACTIVE border was a cyan→green gradient (33ccffee → 00ff99ee).
+#  Umbriel has no gradient, so I split it: focused=cyan, outer=green.
+# ----------------------------------------------------------------------------
+[colors]
+shadow = "#1a1a1aee"
+
+[colors.border]
+focused  = "#33ccffee"
+unfocused = "#595959aa"
+outer    = "#00ff99ee"
+# [GAP] no per-side outer_border_width key; the green outer ring uses its default width
+# [GAP] active/inactive window opacity (1.0 / 0.90) — no global knob in Umbriel
+
+# ----------------------------------------------------------------------------
+#  [OK]  Animations
+#  Bezier curves copied EXACTLY.
+#  Hyprland `speed` has NO 1:1 Umbriel `duration_ms` — durations are [TUNE],
+#  set by relative feel (higher speed ⇒ shorter ms).  Spring re-derived.
+# ----------------------------------------------------------------------------
+[animation]
+duration_ms = 150
+curve = "easeOutQuint"
+
+[animation.beziers]
+easeOutQuint   = [0.23, 1,    0.32, 1]
+easeInOutCubic = [0.65, 0.05, 0.36, 1]
+linear         = [0,    0,    1,    1]
+almostLinear   = [0.5,  0.5,  0.75, 1]
+quick          = [0.15, 0,    0.1,  1]
+
+[animation.springs]
+# [TUNE] re-derived from Hyprland easy = mass 1, stiffness 71.26, dampening 15.83
+#        (≈0.94 damping ratio: smooth, barely-overshooting). Adjust to taste.
+easy = { damping = 0.9, stiffness = 60 }
+
+# [OK]  style+scale copied from windowsIn (popin 87%); the spring sets its own
+#       length, so no duration_ms here.
+[animation.windows_in]
+style = "popin"
+scale = 0.87
+curve = "easy"
+
+# [OK]  windowsOut → fade (Umbriel windows_out is fade/slide only); [TUNE]
+[animation.windows_out]
+style = "fade"
+curve = "linear"
+duration_ms = 280
+
+# [OK]  workspaces — Umbriel allows "slide" or "reveal"; "reveal" needs a GLSL
+#       shader preset (your fade would be a reveal shader — a great first GLSL
+#       effect). Using shader-free "slide" for now.
+[animation.workspaces]
+style = "slide"
+curve = "easeInOutCubic"
+duration_ms = 250
+
+# [OK]  layers; [TUNE]
+[animation.layers]
+curve = "easeOutQuint"
+duration_ms = 200
+
+# [OK]  border; [TUNE]
+[animation.border]
+curve = "easeOutQuint"
+duration_ms = 150
+
+# [TUNE] your "fade" (speed 3.03) → unfocused dim; dim = fraction dimmed
+[animation.dim_unfocused]
+dim = 0.25
+duration_ms = 250
+
+# ----------------------------------------------------------------------------
+#  [OK]  Keybinds   ("Mod" = Super, your mainMod)
+#  noctalia msg binds are verbatim.
+# ----------------------------------------------------------------------------
+[keybinds]
+# --- launchers / apps -------------------------------------------------------
+# [OK]  your config wrapped these in `uwsm app -- ` (a Hyprland session mgr).
+#       If uwsm works under Umbriel, prepend it:  "spawn:uwsm app -- ghostty"
+"Mod+T"      = "spawn:ghostty"
+"Mod+Return" = "spawn:ghostty"
+"Mod+B"      = "spawn:flatpak run app.zen_browser.zen"
+"Mod+E"      = "spawn:nautilus"
+
+# --- Noctalia IPC (verbatim) ------------------------------------------------
+"Mod+R"     = "spawn:noctalia msg panel-toggle launcher"
+"Mod+Space" = "spawn:noctalia msg panel-toggle launcher"
+
+# --- window basics ----------------------------------------------------------
+"Mod+Q"       = "window-close"
+"Mod+V"       = "window-toggle-floating"
+"Mod+Shift+Q" = "window-close"       # [GAP] no hard-kill → graceful close (your kill)
+"Mod+Shift+C" = "window-close"       # [GAP] no hard-kill → graceful close (your kill)
+"Mod+P"       = "window-toggle-floating"  # [GAP] pseudo() → closest is floating
+
+# --- focus ------------------------------------------------------------------
+"Mod+Left"  = "window-focus-left"
+"Mod+Right" = "window-focus-right"
+"Mod+Up"    = "window-focus-up"
+"Mod+Down"  = "window-focus-down"
+
+# --- resize (your Mod+Shift+arrows, ±20px relative, repeating) ---------------
+# [TUNE] Hyprland used ±20px; Umbriel resizes by FRACTION of the extent.
+#        0.02 ≈ a small nudge. Raise/lower magnitude, flip sign if inverted.
+"Mod+Shift+Right" = "window-modify-width-right:0.02"
+"Mod+Shift+Left"  = "window-modify-width-left:0.02"
+"Mod+Shift+Down"  = "window-modify-height-down:0.02"
+"Mod+Shift+Up"    = "window-modify-height-up:0.02"
+
+# --- workspaces 1–10  (your key 0 = workspace 10) ---------------------------
+"Mod+1" = "workspace-switch:1"
+"Mod+2" = "workspace-switch:2"
+"Mod+3" = "workspace-switch:3"
+"Mod+4" = "workspace-switch:4"
+"Mod+5" = "workspace-switch:5"
+"Mod+6" = "workspace-switch:6"
+"Mod+7" = "workspace-switch:7"
+"Mod+8" = "workspace-switch:8"
+"Mod+9" = "workspace-switch:9"
+"Mod+0" = "workspace-switch:10"
+
+"Mod+Shift+1" = "window-move-to-workspace:1"
+"Mod+Shift+2" = "window-move-to-workspace:2"
+"Mod+Shift+3" = "window-move-to-workspace:3"
+"Mod+Shift+4" = "window-move-to-workspace:4"
+"Mod+Shift+5" = "window-move-to-workspace:5"
+"Mod+Shift+6" = "window-move-to-workspace:6"
+"Mod+Shift+7" = "window-move-to-workspace:7"
+"Mod+Shift+8" = "window-move-to-workspace:8"
+"Mod+Shift+9" = "window-move-to-workspace:9"
+"Mod+Shift+0" = "window-move-to-workspace:10"
+
+"Mod+Ctrl+1" = "window-move-to-workspace-silent:1"
+"Mod+Ctrl+2" = "window-move-to-workspace-silent:2"
+"Mod+Ctrl+3" = "window-move-to-workspace-silent:3"
+"Mod+Ctrl+4" = "window-move-to-workspace-silent:4"
+"Mod+Ctrl+5" = "window-move-to-workspace-silent:5"
+"Mod+Ctrl+6" = "window-move-to-workspace-silent:6"
+"Mod+Ctrl+7" = "window-move-to-workspace-silent:7"
+"Mod+Ctrl+8" = "window-move-to-workspace-silent:8"
+"Mod+Ctrl+9" = "window-move-to-workspace-silent:9"
+"Mod+Ctrl+0" = "window-move-to-workspace-silent:10"
+
+# --- workspace navigation ---------------------------------------------------
+"Mod+Shift+Tab" = "workspace-next"
+"Mod+Ctrl+Tab"  = "workspace-previous"
+"Mod+Backslash" = "workspace-focus-last"
+"Mod+WheelUp"   = { action = "workspace-previous", cooldown_ms = 150 }
+"Mod+WheelDown" = { action = "workspace-next",     cooldown_ms = 150 }
+
+# --- layout -----------------------------------------------------------------
+# [GAP] your Mod+J dwindle split-toggle: documented as `layout-toggle-split`
+#       but NOT in nightly 2026-10-11 (docs are ahead of the build). Enable
+#       once you update:  "Mod+J" = "layout-toggle-split"
+
+# --- fullscreen / maximize --------------------------------------------------
+"Mod+Ctrl+F"  = "window-toggle-maximize"    # [OK] your fullscreen mode=maximized
+"Mod+Shift+F" = "window-toggle-fullscreen"  # [OK] your fullscreen mode=fullscreen
+
+# --- scratchpad -------------------------------------------------------------
+"Mod+S"       = "scratchpad-toggle"
+"Mod+Shift+S" = "window-move-to-scratchpad"
+# Restore the focused scratchpad window to the CURRENT workspace.
+# (Note: window-restore-from-scratchpad goes to the current workspace;
+#  window-toggle-scratchpad returns it to the original workspace.)
+"Mod+Ctrl+S"  = "window-restore-from-scratchpad"
+
+# --- screenshots / OCR ------------------------------------------------------
+"Print"        = "spawn:noctalia msg screenshot-fullscreen pick"
+"Mod+Print"    = "spawn:noctalia msg screenshot-region"
+"Mod+Ctrl+Print" = "spawn:/home/mortalglitch/.local/bin/ocr-region"
+
+# [GAP] Mod+LMB drag / Mod+RMB resize (your mouse:272 / mouse:273) — Umbriel has
+#       no explicit drag/resize action; floating windows are usually draggable
+#       by the compositor. Left unbound.
+
+# --- hardware keys (verbatim noctalia msg) ----------------------------------
+# [GAP] the `locked` field is documented but not in nightly 2026-10-11; dropped.
+"XF86AudioRaiseVolume"  = { action = "spawn:noctalia msg volume-up",     repeat = true }
+"XF86AudioLowerVolume"  = { action = "spawn:noctalia msg volume-down",   repeat = true }
+"XF86AudioMute"         = { action = "spawn:noctalia msg volume-mute" }
+"XF86AudioMicMute"      = { action = "spawn:noctalia msg mic-mute" }
+"XF86AudioPlay"         = { action = "spawn:noctalia msg media toggle" }
+"XF86AudioPause"        = { action = "spawn:noctalia msg media toggle" }
+"XF86AudioNext"         = { action = "spawn:noctalia msg media next" }
+"XF86AudioPrev"         = { action = "spawn:noctalia msg media previous" }
+"XF86MonBrightnessUp"   = { action = "spawn:noctalia msg brightness-up",   repeat = true }
+"XF86MonBrightnessDown" = { action = "spawn:noctalia msg brightness-down", repeat = true }
+
+# ----------------------------------------------------------------------------
+#  [OK]  Window rules
+# ----------------------------------------------------------------------------
+# Unfocused-window transparency — your Hyprland inactive_opacity = 0.90.
+# Every non-focused window drops to 90% opacity (10% see-through).
+[[window_rule]]
+match.is_focused = false
+opacity = 0.90
+
+# kitty at 95% opacity (your kitty opacity rule)
+[[window_rule]]
+match.app_id = "^kitty$"
+opacity = 0.95
+
+# Ghostty at 95% opacity — a little transparency in your terminal
+[[window_rule]]
+match.app_id = "^com.mitchellh.ghostty$"
+opacity = 0.95
+
+# ----------------------------------------------------------------------------
+#  Not ported (secondary) — add when you want them:
+#   • monitor config  → per-[output] sections (Umbriel auto-detects for now)
+#   • environment.lua → [environment]  KEY = "value"
+# ============================================================================
+
+
+# ----------------------------------------------------------------------------
+# Workspace Configuration
+# ============================================================================
+
+# [[output]]
+# name = "eDP-1"
+# workspaces = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
+
+[include.optional]
+files = ["noctalia.toml"]
