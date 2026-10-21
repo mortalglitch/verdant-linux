@@ -1,0 +1,15 @@
+# bootc-image-builder's manifest step runs dnf in a context where the
+# image's file:///etc/pki/rpm-gpg/RPM-GPG-KEY-terra44 is not readable, which
+# hard-fails the ISO build. Terra distributes its key only via the
+# terra-gpg-keys RPM (no https key URL exists), so relax signature checks
+# for this repo. Packages ARE GPG-verified at image build time (the key is
+# baked into /etc/pki/rpm-gpg and dnf verifies during the container build).
+#
+# To restore strict checking: remove this file and rebuild.
+[terra]
+gpgcheck=0
+repo_gpgcheck=0
+
+[terra-source]
+gpgcheck=0
+repo_gpgcheck=0
