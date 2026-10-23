@@ -4,7 +4,7 @@ config_version = 15
 ui_scale = 1.2000000104308128
 
 [bar.default]
-center = [ "clock", "wallpaper", "wallhaven" ]
+center = [ "clock", "wallpaper" ]
 start = [ "launcher", "keys", "workspaces" ]
 
 [idle]
@@ -65,12 +65,8 @@ widget_order = [ "lockscreen-login-box@eDP-1" ]
 [plugin_settings."linux-fertxo/hyprland-visual-editor"]
 is_system_active = true
 
-[plugin_settings."noctalia/wallhaven"]
-api_key = "REDACTED"
-download_dir = "/home/mortalglitch/Pictures/Wallpapers"
-
 [plugins]
-enabled = [ "mortalglitch/keymap", "noctalia/wallhaven" ]
+enabled = [ "mortalglitch/keymap" ]
 
 [shell]
 font_family = "Caladea"
@@ -80,7 +76,7 @@ telemetry_enabled = true
     transparency_mode = "glass"
 
     [shell.screenshot]
-    directory = "/home/mortalglitch/Pictures/Screenshots"
+    directory = "~/Pictures/Screenshots"
 
 [theme]
 builtin = "Tokyo-Night"
@@ -94,25 +90,16 @@ wallpaper_scheme = "m3-monochrome"
     community_ids = [ "brave", "zen-browser", "neovim" ]
 
 [wallpaper]
-directory = "/home/mortalglitch/Pictures/Wallpapers"
+directory = "~/Pictures/Wallpapers"
 
     [wallpaper.default]
-    path = "/home/mortalglitch/Pictures/Wallpapers/Eco-Futurist Farm Village Harvest.png"
-
-    [wallpaper.last]
-    path = "/home/mortalglitch/Pictures/Wallpapers/Eco-Futurist Farm Village Harvest.png"
-
-    [wallpaper.monitors.eDP-1]
-    path = "/home/mortalglitch/Pictures/Wallpapers/Eco-Futurist Farm Village Harvest.png"
+    path = "~/Pictures/Wallpapers/default.png"
 
 [widget.clock]
 format = "{:%A} - {:%Y-%m-%d} - {:%H:%M}"
 
 [widget.keys]
 type = "mortalglitch/keymap:keys"
-
-[widget.wallhaven]
-type = "noctalia/wallhaven:wallhaven"
 
 [widget.workspaces]
 hide_when_empty = true

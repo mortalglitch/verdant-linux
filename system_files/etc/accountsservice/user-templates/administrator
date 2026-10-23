@@ -1,0 +1,9 @@
+# Default session for new administrator users: Umbriel (Noctalia).
+#
+# Read by the accounts-service daemon when it first sees a user that has no
+# cached entry in /var/lib/AccountsService/users/ — i.e. any user created at
+# install time (anaconda) or via gnome-initial-setup. GDM 50 then starts
+# umbriel.desktop instead of falling back to the alphabetically-first session
+# (gnome.desktop).
+[User]
+Session=umbriel.desktop
