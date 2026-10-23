@@ -263,7 +263,7 @@ duration_ms = 250
 # --- screenshots / OCR ------------------------------------------------------
 "Print"        = "spawn:noctalia msg screenshot-fullscreen pick"
 "Mod+Print"    = "spawn:noctalia msg screenshot-region"
-"Mod+Ctrl+Print" = "spawn:/home/mortalglitch/.local/bin/ocr-region"
+"Mod+Ctrl+Print" = "spawn:~/.local/bin/ocr-region"
 
 # [GAP] Mod+LMB drag / Mod+RMB resize (your mouse:272 / mouse:273) — Umbriel has
 #       no explicit drag/resize action; floating windows are usually draggable
