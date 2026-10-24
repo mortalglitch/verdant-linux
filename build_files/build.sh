@@ -17,6 +17,23 @@ dnf5 -y install \
 ### Umbriel + Noctalia (Terra repo, baked in via system_files/etc/yum.repos.d/terra.repo)
 dnf5 -y install umbriel-nightly noctalia
 
+### Noctalia Greeter (greetd) — replace GDM as the login screen
+# greetd from Fedora, noctalia-greeter from Terra (baked in via system_files)
+dnf5 -y install greetd noctalia-greeter
+
+# Point greetd at the Noctalia greeter session wrapper (NOT the noctalia-greeter binary)
+mkdir -p /etc/greetd
+cat > /etc/greetd/config.toml <<'EOF'
+[default_session]
+command = "/usr/bin/noctalia-greeter-session"
+user = "greeter"
+EOF
+
+# Cut GDM over to greetd (Silverblue's default display manager is gdm).
+# systemctl enable/disable are filesystem ops and work in the build container.
+systemctl disable gdm
+systemctl enable greetd
+
 ### Preinstall LazyVim plugins into the skel (headless sync; lazy-lock.json pins versions)
 export HOME=/etc/skel
 nvim --headless "+Lazy! sync" +qa
