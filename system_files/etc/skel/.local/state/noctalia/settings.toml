@@ -84,8 +84,9 @@ telemetry_enabled = true
 [theme]
 builtin = "Tokyo-Night"
 community_palette = "Osaka jade"
+custom_palette = "VerdantBrutalistTheme"
 mode = "light"
-source = "wallpaper"
+source = "custom"
 wallpaper_scheme = "m3-monochrome"
 
     [theme.templates]
@@ -102,7 +103,7 @@ directory = "~/Pictures/Wallpapers"
 format = "{:%A} - {:%Y-%m-%d} - {:%H:%M}"
 
 [widget.control-center]
-glyph = "sunset-2"
+glyph = "leaf-2"
 
 [widget.keys]
 type = "mortalglitch/keymap:keys"

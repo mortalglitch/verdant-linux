@@ -99,7 +99,7 @@ enabled=1
 │                                          (ctx merge — Homebrew, see §5)
 │                                          FROM ghcr.io/ublue-os/silverblue-main:44
 ├── Justfile                             (from image-template)
-├── image-template.env                   IMAGE_NAME=umbrielblue, REPO_ORGANIZATION=local, …
+├── image-template.env                   IMAGE_NAME=verdant-linux, REPO_ORGANIZATION=local, …
 ├── build_files/
 │   └── build.sh                         terra repo + packages + LazyVim preinstall
 ├── system_files/                        (copied to / in the image)
@@ -117,7 +117,7 @@ enabled=1
 
 Build flow (all on this machine):
 1. `dnf install just`
-2. `just build` → `localhost/umbrielblue:<tag>` (pulls silverblue-main:44, ~2 GB)
+2. `just build` → `localhost/verdant-linux:<tag>` (pulls silverblue-main:44, ~2 GB)
 3. `just build-iso` → `output/bootiso/install.iso` (expect ~3 GB)
 4. Test in VM: `just run-vm-iso` (KVM present) or qcow2 + `systemd-vmspawn`
 5. Burn ISO to USB → install on target machine (x86_64, UEFI)
@@ -362,6 +362,6 @@ All present on this machine; each is just more `system_files/` content:
    GitHub + GHCR later for `uupd`-style updates.
 3. Noctalia plugins: **bake all 23 MB** (offline-complete).
 4. Terra repo in image: **leave enabled** (nightly; no runtime dnf on bootc anyway).
-5. Image name/tag: e.g. `localhost/umbrielblue:44` — your call.
+5. Image name/tag: `localhost/verdant-linux:44` (named "Verdant Linux" 2026-10-24).
 6. starship: **on-demand `just starship` recipe** (brew if present, else pinned official
    release) since it's not in Fedora repos; `starship.toml` baked via skel.

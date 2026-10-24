@@ -122,7 +122,7 @@ Then rebuild + re-ISO.
 
 ## 9. The rebuild loop
 ```bash
-just build          # container image  -> localhost/umbrielblue:<tag>
+just build          # container image  -> localhost/verdant-linux:<tag>
 just build-iso      # ISO              -> output/bootiso/install.iso
 just run-vm-iso     # boot it in KVM (web console) — verify BEFORE burning
 ```
