@@ -24,15 +24,30 @@ dnf5 -y install greetd noctalia-greeter
 # Point greetd at the Noctalia greeter session wrapper (NOT the noctalia-greeter binary)
 mkdir -p /etc/greetd
 cat > /etc/greetd/config.toml <<'EOF'
+[terminal]
+vt = 1
+
 [default_session]
 command = "/usr/bin/noctalia-greeter-session"
-user = "greeter"
+user = "greetd"
 EOF
 
 # Cut GDM over to greetd (Silverblue's default display manager is gdm).
 # systemctl enable/disable are filesystem ops and work in the build container.
 systemctl disable gdm
 systemctl enable greetd
+
+### Remove the GNOME login session (minimal: shell, session, gdm)
+# Keep nautilus (file manager) + gedit (editor) + the GNOME *libraries*
+# (gnome-keyring, gnome-desktop3/4, gnome-menus) that Noctalia/GTK still need.
+# dnf also auto-drops the now-orphaned gnome-initial-setup (the first-boot
+# "welcome center") and gnome-browser-connector. The `systemctl disable gdm`
+# above already ran while gdm was present; removing the package is the clean cut.
+dnf5 -y remove \
+  gnome-shell gnome-shell-common \
+  gnome-shell-extension-apps-menu gnome-shell-extension-background-logo gnome-shell-extension-common gnome-shell-extension-launch-new-instance gnome-shell-extension-places-menu gnome-shell-extension-window-list \
+  gnome-session gnome-session-wayland-session gnome-classic-session \
+  gdm
 
 ### Preinstall LazyVim plugins into the skel (headless sync; lazy-lock.json pins versions)
 export HOME=/etc/skel

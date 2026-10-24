@@ -4,7 +4,10 @@ config_version = 15
 ui_scale = 1.2000000104308128
 
 [bar.default]
+background_opacity = 0.92
 center = [ "clock", "wallpaper" ]
+margin_edge = 2
+radius = 30
 start = [ "launcher", "keys", "workspaces" ]
 
 [idle]
@@ -97,6 +100,9 @@ directory = "~/Pictures/Wallpapers"
 
 [widget.clock]
 format = "{:%A} - {:%Y-%m-%d} - {:%H:%M}"
+
+[widget.control-center]
+glyph = "sunset-2"
 
 [widget.keys]
 type = "mortalglitch/keymap:keys"
