@@ -53,8 +53,13 @@ dnf5 -y remove \
 export HOME=/etc/skel
 nvim --headless "+Lazy! sync" +qa
 
-### Flatpak + Bazaar (Flathub)
+### Flatpak + Bazaar + DistroShelf (Flathub)
+# DistroShelf = GUI for Distrobox "pet containers" (distrobox itself ships
+# in the Silverblue base). /etc/distrobox/distrobox.ini (system_files) holds
+# the declarative box list; the skel keyfile preselects Ghostty as the
+# terminal it spawns into.
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak install -y --system flathub io.github.kolunmi.Bazaar
+flatpak install -y --system flathub com.ranfdev.DistroShelf
 
 dnf5 clean all
