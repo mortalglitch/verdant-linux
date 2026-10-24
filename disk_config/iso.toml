@@ -1,3 +1,41 @@
-# Local personal ISO: no installer customizations.
-# Standard anaconda installer; user picks disk + creates user;
-# installs the embedded umbrielblue image.
+# Umbriel ISO — full interactive installer.
+#
+# Why this exists:
+#   The previous (empty) iso.toml let bootc-image-builder fall back to its
+#   default profile, whose auto-generated kickstart carries `clearpart --all`.
+#   That "automated" profile skips the interactive user-creation step, so no
+#   account is made during install and first boot falls through to GNOME's
+#   gnome-initial-setup (the "welcome center" where the user sets username /
+#   password / location).
+#
+# This config replaces that with an interactive profile (mirroring
+# disk_config/iso-kde.toml): the user picks the disk (Storage) and creates
+# their account (Users) DURING install. With a user already present,
+# gnome-initial-setup is skipped on first boot and the session lands in
+# Umbriel (via the accounts-service template default -> umbriel.desktop).
+#
+# The kickstart intentionally has no `clearpart` (so the user chooses the
+# install destination) and no `bootc switch` (bootc-image-builder auto-adds
+# the ostreecontainer directive for the embedded image).
+[customizations.installer.kickstart]
+contents = """
+%post
+# noop — the embedded image is deployed via the auto-added ostreecontainer
+# directive; nothing else to do after install.
+true
+%end
+"""
+
+[customizations.installer.modules]
+enable = [
+  "org.fedoraproject.Anaconda.Modules.Storage",
+  "org.fedoraproject.Anaconda.Modules.Runtime",
+  "org.fedoraproject.Anaconda.Modules.Network",
+  "org.fedoraproject.Anaconda.Modules.Security",
+  "org.fedoraproject.Anaconda.Modules.Services",
+  "org.fedoraproject.Anaconda.Modules.Users",
+  "org.fedoraproject.Anaconda.Modules.Timezone"
+]
+disable = [
+  "org.fedoraproject.Anaconda.Modules.Subscription",
+]
