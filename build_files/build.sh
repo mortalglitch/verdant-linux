@@ -37,10 +37,11 @@ EOF
 systemctl disable gdm
 systemctl enable greetd
 
-### Homebrew — enable the first-boot setup service (extracts /usr/share/homebrew.tar.zst)
-# The brew image ships brew-setup.service + a system-preset, but bootc install
-# does NOT apply presets, so enable it explicitly (same as Bazzite/Bluefin).
-systemctl enable brew-setup.service
+### Homebrew — enable first-boot setup + auto-update/upgrade timers
+# The brew image ships these + a system-preset, but bootc install does NOT
+# apply presets, so enable explicitly. (Bazzite/Bluefin only enable brew-setup;
+# we also enable the update/upgrade timers for automatic Homebrew maintenance.)
+systemctl enable brew-setup.service brew-update.timer brew-upgrade.timer
 
 ### Remove the GNOME login session (minimal: shell, session, gdm)
 # Keep nautilus (file manager) + gedit (editor) + the GNOME *libraries*
