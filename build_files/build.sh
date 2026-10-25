@@ -7,7 +7,7 @@ set -euo pipefail
 #    usr/share/homebrew.tar.zst, brew-setup.service + update/upgrade timers)
 cp -avf "/ctx/system_files"/. /
 
-### Packages (Fedora + RPMfusion — no COPRs needed)
+### Packages (Fedora + RPMfusion; LumineCapture from COPR — see below)
 dnf5 -y install \
   ghostty btop just \
   gedit \
@@ -71,5 +71,24 @@ flatpak install -y --system flathub com.ranfdev.DistroShelf
 flatpak install -y --system flathub com.github.tchx84.Flatseal    # flatpak permission manager
 flatpak install -y --system flathub io.github.flattool.Warehouse  # flatpak remote/override manager
 flatpak install -y --system flathub it.mijorus.gearlever          # AppImage manager
+
+### LumineCapture — screenshot/annotation tool (bound to Super+Print in the skel umbriel config)
+# wlr-screencopy backend (same protocol as grim) — no portal needed.
+# COPR: enable -> install -> disable (uBlue convention: COPRs left disabled in the image).
+cat > /etc/yum.repos.d/lumine-capture.copr.repo <<'EOF'
+[copr:copr.fedorainfracloud.org:netflate:lumine-capture]
+name=Copr repo for lumine-capture owned by netflate
+baseurl=https://download.copr.fedorainfracloud.org/results/netflate/lumine-capture/fedora-$releasever-$basearch/
+type=rpm-md
+skip_if_unavailable=True
+gpgcheck=1
+gpgkey=https://download.copr.fedorainfracloud.org/results/netflate/lumine-capture/pubkey.gpg
+repo_gpgcheck=0
+enabled=1
+enabled_metadata=1
+EOF
+dnf5 -y install lumine-capture
+# Leave the COPR disabled in the image (re-enable: dnf5 config-manager --set-enabled copr:copr.fedorainfracloud.org:netflate:lumine-capture)
+sed -i 's/^enabled=1/enabled=0/' /etc/yum.repos.d/lumine-capture.copr.repo
 
 dnf5 clean all

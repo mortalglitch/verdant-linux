@@ -261,8 +261,12 @@ duration_ms = 250
 "Mod+Ctrl+S"  = "window-restore-from-scratchpad"
 
 # --- screenshots / OCR ------------------------------------------------------
+# Super+Print = LumineCapture (COPR netflate/lumine-capture): fast region
+# capture + annotate (magnifier, numbered arrows, OCR, redact, pin to screen).
+# wlr-screencopy backend — same protocol as grim, no portal needed.
+# Bare Print stays on the Noctalia fullscreen widget; Super+Ctrl+Print = ocr-region.
 "Print"        = "spawn:noctalia msg screenshot-fullscreen pick"
-"Mod+Print"    = "spawn:noctalia msg screenshot-region"
+"Mod+Print"    = "spawn:lumine-capture"
 "Mod+Ctrl+Print" = "spawn:~/.local/bin/ocr-region"
 
 # [GAP] Mod+LMB drag / Mod+RMB resize (your mouse:272 / mouse:273) — Umbriel has
