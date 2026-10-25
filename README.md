@@ -6,6 +6,7 @@ Homebrew (baked via the Bluefin pattern), and Flatpak + Bazaar.
 
 - **PLAN.md** — full build plan: inventory, Containerfile/build.sh walkthrough, first-boot notes
 - **TUTORIAL.md** — how to add / change / remove anything and rebuild
+- **CREATORS_GUIDE.md** — maintainer's handbook: CI/release pipeline, update cadence, admin tutorials, bug-report process, going-public checklist
 - **Justfile** — build recipes (from [ublue-os/image-template](https://github.com/ublue-os/image-template))
 
 ## Quick start
