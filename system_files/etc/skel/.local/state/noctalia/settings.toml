@@ -68,7 +68,7 @@ wallpaper_scheme = "m3-monochrome"
 directory = "~/Pictures/Wallpapers"
 
     [wallpaper.default]
-    path = "~/Pictures/Wallpapers/default.png"
+    path = "~/Pictures/Wallpapers/star-trails-light.png"
 
 [widget.clock]
 format = "{:%A} - {:%Y-%m-%d} - {:%H:%M}"
