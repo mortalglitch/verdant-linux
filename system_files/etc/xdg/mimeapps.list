@@ -1,0 +1,40 @@
+# Verdant — bake Loupe (org.gnome.Loupe) as the default image viewer.
+#
+# Why this file exists: nautilus (and all GTK apps) resolve the "open with"
+# target via GAppInfo, which only honors an EXPLICIT mimeapps.list entry and
+# never falls back to "first available handler". Installing the Loupe flatpak
+# alone registers it as a *possible* handler but sets no default, so
+# double-clicking an image shows the "no default application" popup. This file
+# fixes that. It is the system-wide (all-users) default; a per-user
+# ~/.config/mimeapps.list overrides it if you later want a different viewer.
+#
+# Copied to /etc/xdg/mimeapps.list by build.sh (`cp -avf system_files/. /`).
+# MIME list mirrors org.gnome.Loupe's .desktop MimeType= field exactly.
+[Default Applications]
+image/apng=org.gnome.Loupe.desktop
+image/avif=org.gnome.Loupe.desktop
+image/bmp=org.gnome.Loupe.desktop
+image/gif=org.gnome.Loupe.desktop
+image/heic=org.gnome.Loupe.desktop
+image/jpeg=org.gnome.Loupe.desktop
+image/jp2=org.gnome.Loupe.desktop
+image/jxl=org.gnome.Loupe.desktop
+image/png=org.gnome.Loupe.desktop
+image/qoi=org.gnome.Loupe.desktop
+image/svg+xml=org.gnome.Loupe.desktop
+image/svg+xml-compressed=org.gnome.Loupe.desktop
+image/tiff=org.gnome.Loupe.desktop
+image/vnd.microsoft.icon=org.gnome.Loupe.desktop
+image/webp=org.gnome.Loupe.desktop
+image/x-dds=org.gnome.Loupe.desktop
+image/x-exr=org.gnome.Loupe.desktop
+image/x-jp2-codestream=org.gnome.Loupe.desktop
+image/x-portable-anymap=org.gnome.Loupe.desktop
+image/x-portable-bitmap=org.gnome.Loupe.desktop
+image/x-portable-graymap=org.gnome.Loupe.desktop
+image/x-portable-pixmap=org.gnome.Loupe.desktop
+image/x-qoi=org.gnome.Loupe.desktop
+image/x-tga=org.gnome.Loupe.desktop
+image/x-win-bitmap=org.gnome.Loupe.desktop
+image/x-xbitmap=org.gnome.Loupe.desktop
+image/x-xpixmap=org.gnome.Loupe.desktop

@@ -65,7 +65,11 @@ nvim --headless "+Lazy! sync" +qa
 # the declarative box list; the skel keyfile preselects Ghostty as the
 # terminal it spawns into.
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install -y --system flathub org.gnome.Loupe            # image viewer (crop/rotate/flip, EXIF/metadata)
 flatpak install -y --system flathub io.github.kolunmi.Bazaar
 flatpak install -y --system flathub com.ranfdev.DistroShelf
+flatpak install -y --system flathub com.github.tchx84.Flatseal    # flatpak permission manager
+flatpak install -y --system flathub io.github.flattool.Warehouse  # flatpak remote/override manager
+flatpak install -y --system flathub it.mijorus.gearlever          # AppImage manager
 
 dnf5 clean all
