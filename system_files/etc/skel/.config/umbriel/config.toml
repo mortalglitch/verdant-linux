@@ -180,6 +180,10 @@ duration_ms = 250
 # --- Noctalia IPC (verbatim) ------------------------------------------------
 "Mod+R"     = "spawn:noctalia msg panel-toggle launcher"
 "Mod+Space" = "spawn:noctalia msg panel-toggle launcher"
+# Keymap plugin panel (the CLI `panel-toggle <plugin:panel>` route reports
+# "unknown panel" for plugin panels, so this dispatches to the plugin's
+# headless service and toggles in-process).
+"Mod+K"     = "spawn:noctalia msg plugin mortalglitch/keymap:service all toggle"
 
 # --- window basics ----------------------------------------------------------
 "Mod+Q" = "window-close"

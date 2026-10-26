@@ -3,7 +3,7 @@
 # shortcuts with a search bar. Detects the running compositor on open.
 id = "mortalglitch/keymap"
 name = "Keymap"
-version = "1.1.0"
+version = "1.2.0"
 plugin_api = 24
 author = "mortalglitch"
 
@@ -22,3 +22,10 @@ height = 640
 placement = "floating"
 position = "center"
 keyboard_focus = "exclusive"
+
+# Headless IPC target for the Mod+K keybind: `noctalia msg plugin
+# mortalglitch/keymap:service all toggle` toggles the panel in-process
+# (the CLI `panel-toggle` route reports "unknown panel" for plugin panels).
+[[service]]
+id = "service"
+entry = "service.luau"

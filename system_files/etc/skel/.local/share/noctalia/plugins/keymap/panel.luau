@@ -229,7 +229,7 @@ function renderList()
         onChange = "onSearchChange",
       }),
     }),
-    ui.scroll({ flexGrow = 1, gap = 4, radius = 10, border = "outline_variant" }, children),
+    ui.scroll({ flexGrow = 1, gap = 4, radius = 10, border = "outline" }, children),
   }))
 end
 
