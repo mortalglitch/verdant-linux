@@ -95,3 +95,7 @@ restore-noctalia:
 # restore-config: restore the original Umbriel + Noctalia config from /etc/skel
 restore-config: restore-umbriel restore-noctalia
     echo "All done — if anything still looks off, log out and back in."
+
+# ssh: optional SSH access — just ssh <enable|disable|status>
+ssh *action:
+    just -f "${HOME}/.config/verdant/ssh.just" {{ action }}

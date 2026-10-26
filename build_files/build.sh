@@ -37,6 +37,25 @@ EOF
 systemctl disable gdm
 systemctl enable greetd
 
+### Firewall — custom 'verdant' zone (public-style, no SSH), default zone
+# Fedora's default FedoraWorkstation zone opens SSH and every port >1024, and
+# even the stock 'public' zone allows ssh. Ship a custom zone = public minus
+# ssh, and make it the default. openssh-server stays installed but disabled;
+# ~/.config/verdant/ssh.just (wrapper: `just ssh <enable|disable|status>`)
+# flips SSH on/off in the default zone.
+mkdir -p /etc/firewalld/zones
+cat > /etc/firewalld/zones/verdant.xml <<'EOF'
+<?xml version="1.0" encoding="utf-8"?>
+<zone>
+  <short>Verdant</short>
+  <description>Verdant default: public-style zone with SSH removed. Enable SSH with: just ssh enable</description>
+  <service name="mdns"/>
+  <service name="dhcpv6-client"/>
+  <forward/>
+</zone>
+EOF
+sed -i 's/^DefaultZone=.*/DefaultZone=verdant/' /etc/firewalld/firewalld.conf
+
 ### Homebrew — enable first-boot setup + auto-update/upgrade timers
 # The brew image ships these + a system-preset, but bootc install does NOT
 # apply presets, so enable explicitly. (Bazzite/Bluefin only enable brew-setup;
