@@ -182,11 +182,8 @@ duration_ms = 250
 "Mod+Space" = "spawn:noctalia msg panel-toggle launcher"
 
 # --- window basics ----------------------------------------------------------
-"Mod+Q"       = "window-close"
-"Mod+V"       = "window-toggle-floating"
-"Mod+Shift+Q" = "window-close"       # [GAP] no hard-kill → graceful close (your kill)
-"Mod+Shift+C" = "window-close"       # [GAP] no hard-kill → graceful close (your kill)
-"Mod+P"       = "window-toggle-floating"  # [GAP] pseudo() → closest is floating
+"Mod+Q" = "window-close"
+"Mod+V" = "window-toggle-floating"
 
 # --- focus ------------------------------------------------------------------
 "Mod+Left"  = "window-focus-left"
