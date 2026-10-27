@@ -37,6 +37,59 @@ EOF
 systemctl disable gdm
 systemctl enable greetd
 
+### Branding — Verdant (os-release + Noctalia Greeter)
+# os-release NAME/PRETTY_NAME drive three things: the installer welcome screen
+# and GRUB menu (bootc-image-builder bakes this into .buildstamp at ISO build
+# time) and the installed system's release strings. ID=fedora stays — repos
+# and tooling key off it, not NAME.
+sed -i -E \
+  -e 's/^NAME=.*/NAME="Verdant"/' \
+  -e 's/^PRETTY_NAME=.*/PRETTY_NAME="Verdant"/' \
+  /etc/os-release
+
+# Noctalia Greeter: static admin config (wins over Noctalia Sync — the sync UI
+# lives in Noctalia Shell, so a static toml is the reliable route for a
+# locked-in login screen). Verdant palette (dark variant of the skel
+# VerdantBrutalistTheme.json), star-trails wallpaper, Umbriel as the default
+# session, Noctalia logo hidden (we're Verdant, not Noctalia).
+install -d /usr/share/verdant
+install -m 644 /etc/skel/Pictures/Wallpapers/star-trails-dark.png /usr/share/verdant/wallpaper.png
+mkdir -p /var/lib/noctalia-greeter
+cat > /var/lib/noctalia-greeter/greeter.toml <<'EOF'
+[session]
+default = "Umbriel"
+
+[appearance]
+scheme = "Synced"
+theme_mode = "dark"
+hide_logo = true
+power_buttons_position = "bottom-right"
+
+[appearance.palette]
+primary = "#9CAF88"
+on_primary = "#24231F"
+secondary = "#9DB8A6"
+on_secondary = "#24231F"
+tertiary = "#C97B54"
+on_tertiary = "#24231F"
+error = "#C75146"
+on_error = "#F5F2E9"
+surface = "#24231F"
+on_surface = "#E8E4D9"
+surface_variant = "#3A3931"
+on_surface_variant = "#B8B2A0"
+outline = "#6E6A5C"
+shadow = "#1B1A16"
+hover = "#403F35"
+on_hover = "#E8E4D9"
+
+[appearance.wallpaper]
+path = "/usr/share/verdant/wallpaper.png"
+fill_mode = "crop"
+fill_color = "#1B1A16"
+EOF
+chown -R greetd:greetd /var/lib/noctalia-greeter
+
 ### Firewall — custom 'verdant' zone (public-style, no SSH), default zone
 # Fedora's default FedoraWorkstation zone opens SSH and every port >1024, and
 # even the stock 'public' zone allows ssh. Ship a custom zone = public minus
