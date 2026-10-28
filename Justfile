@@ -269,6 +269,13 @@ _rootful_load_image $target_image=image_name $tag=default_tag:
         exit 0
     fi
 
+    # If the image is already in the rootful store, nothing to load
+    ROOTFUL_IMG_ID=$(just sudoif podman images --filter reference="${target_image}:${tag}" --format "'{{ '{{.ID}}' }}'")
+    if [[ -n "$ROOTFUL_IMG_ID" ]]; then
+        echo "Image already present in rootful podman, skipping load."
+        exit 0
+    fi
+
     # Try to resolve the image tag using podman inspect
     set +e
     resolved_tag=$(podman inspect -t image "${target_image}:${tag}" | jq -r '.[].RepoTags.[0]')
@@ -347,9 +354,19 @@ build-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_bui
 [group('Build Virtal Machine Image')]
 build-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "raw" "disk_config/disk.toml")
 
-# Build an ISO virtual machine image (then brand it as Verdant)
+# Build an ISO virtual machine image (then brand it as Verdant).
+# The image is tagged under its GHCR reference in the rootful store before
+# running bootc-image-builder, so the installer records
+# ghcr.io/<org>/<image>:<tag> (not localhost/...) as the update source for
+# `bootc upgrade` on ISO-installed systems.
 [group('Build Virtal Machine Image')]
-build-iso $target_image=("localhost/" + image_name) $tag=default_tag: (_build-bib target_image tag "iso" "disk_config/iso.toml") && brand-iso
+build-iso $target_image=("localhost/" + image_name) $tag=default_tag: (_rootful_load_image target_image tag)
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    just sudoif podman tag "${target_image}:${tag}" "ghcr.io/${repo_organization}/${image_name}:${tag}"
+    just _build-bib "ghcr.io/${repo_organization}/${image_name}" "${tag}" "iso" "disk_config/iso.toml"
+    just brand-iso
 
 # Rebuild a QCOW2 virtual machine image
 [group('Build Virtal Machine Image')]
