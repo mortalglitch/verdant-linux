@@ -1,6 +1,13 @@
 # On-demand tools for the target machine (run: just <recipe>)
 
-# starship: brew if available, else official release binary
+# default: `just` with no args lists the recipes instead of auto-running the
+# first one — install recipes (starship, brew) stay opt-in and gated.
+[default]
+help:
+    just --list
+
+# starship: install the starship prompt (brew if available, else official release
+# binary). Asks for confirmation before installing.
 starship:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -8,6 +15,11 @@ starship:
       echo "starship already installed: $(starship --version)"
       exit 0
     fi
+    read -r -p "Install starship? [y/N] " ans || ans="N"
+    case "${ans:-N}" in
+      y|Y|yes|YES|Yes) ;;
+      *) echo "Aborted — starship was not installed."; exit 1 ;;
+    esac
     if command -v brew >/dev/null; then
       brew install starship
     else

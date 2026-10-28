@@ -64,7 +64,7 @@ wallpaper_scheme = "m3-monochrome"
 
     [theme.templates]
     builtin_ids = [ "btop", "gtk3", "gtk4", "ghostty", "umbriel" ]
-    community_ids = [ "brave", "zen-browser", "neovim" ]
+    community_ids = [ "lazyvim" ]
 
 [wallpaper]
 directory = "~/Pictures/Wallpapers"
