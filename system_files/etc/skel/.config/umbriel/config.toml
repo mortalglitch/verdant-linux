@@ -22,11 +22,11 @@
 # files = ["/usr/share/umbriel/effects/animation/workspace_wipe/effect.toml"]
 
 # ----------------------------------------------------------------------------
-#  [TUNE] Output scale — eDP-1 was 1.0; bumped to 1.2 (your 1.15~1.25 range).
-#  Dial to taste: 1.15 (subtle) → 1.25 (largest).  Live-reloads on save.
+#  [TUNE] eDP-1 — scale left at the compositor default (1.0) so the image
+#  works on any panel (e.g. a different Framework 16 GPU/CPU). This section
+#  now only renames workspaces 1-10 to Chinese numerals.
 # ----------------------------------------------------------------------------
 [output."eDP-1"]
-scale = 1.2
 workspaces = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
 # The above renames the workspaces but makes it a fixed list. This will need to be deleted to return to a dynamic list.
 
