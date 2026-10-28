@@ -14,6 +14,15 @@ dnf5 -y install \
   nvim gcc make \
   grim tesseract wl-clipboard libnotify
 
+### NTP — enable systemd-timesyncd (the uBlue base ships it UNENABLED)
+# The timesyncd binary is in the base (merged into systemd-udev in Fedora 44 —
+# there is no standalone systemd-timesyncd package), but the service is not
+# enabled. Without an NTP client running, an offline install leaves the system
+# clock unsynced and nothing corrects it once the machine goes online — TLS
+# cert validation against Flathub/Bazaar then fails on the bad timestamp.
+# Enabling it makes the clock sync itself the moment a network is up.
+systemctl enable systemd-timesyncd.service
+
 ### Umbriel + Noctalia (Terra repo, baked in via system_files/etc/yum.repos.d/terra.repo)
 dnf5 -y install umbriel-nightly noctalia
 
