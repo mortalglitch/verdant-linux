@@ -349,7 +349,7 @@ build-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_build
 
 # Build an ISO virtual machine image (then brand it as Verdant)
 [group('Build Virtal Machine Image')]
-build-iso $target_image=("localhost/" + image_name) $tag=default_tag: (_build-bib target_image tag "iso" "disk_config/iso.toml") && (brand-iso)
+build-iso $target_image=("localhost/" + image_name) $tag=default_tag: (_build-bib target_image tag "iso" "disk_config/iso.toml") && brand-iso
 
 # Rebuild a QCOW2 virtual machine image
 [group('Build Virtal Machine Image')]
@@ -361,16 +361,16 @@ rebuild-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_reb
 
 # Rebuild an ISO virtual machine image (then brand it as Verdant)
 [group('Build Virtal Machine Image')]
-rebuild-iso $target_image=("localhost/" + image_name) $tag=default_tag: (_rebuild-bib target_image tag "iso" "disk_config/iso.toml") && (brand-iso)
+rebuild-iso $target_image=("localhost/" + image_name) $tag=default_tag: (_rebuild-bib target_image tag "iso" "disk_config/iso.toml") && brand-iso
 
 # Brand the BIB installer ISO as Verdant: volume label + boot menu titles, and
 # /IMAGES/PRODUCT.IMG (Anaconda welcome-screen product name + Verdant
 # stylesheet/logo over Fedora's). Runs on output/bootiso/install.iso.
 [private]
 brand-iso:
-	#!/usr/bin/env bash
-	set -euo pipefail
-	just sudoif bash build_files/brand-iso.sh output/bootiso/install.iso 44
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just sudoif bash build_files/brand-iso.sh output/bootiso/install.iso 44
 
 # Run a virtual machine with the specified image type and configuration
 _run-vm $target_image $tag $type $config:
