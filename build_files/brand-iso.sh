@@ -154,6 +154,32 @@ xorriso -indev "$IN" -outdev "$IN.tmp" \
   -map    "$WORK/iso/IMAGES/PRODUCT.IMG"  /images/product.img
 mv -f "$IN.tmp" "$IN"
 
+# --- 3b. Patch the ESP partition -------------------------------------------------
+# xorriso only rewrites the ISO9660 tree; the ESP partition (partition 2) is
+# OUT OF ITS REACH, so its grub.cfg still points at the old volume label
+# (search -l / hd:LABEL). Real UEFI firmware boots the ESP, so the stale label
+# breaks kernel loading on hardware ("pxeboot/vmlinuz not found") while VMs
+# hide it (SeaBIOS boots the El Torito/isohybrid path, never the ESP).
+echo ">> Patching ESP partition (grub.cfg label)..."
+ESP_SECTS=$(fdisk -l "$IN" 2>/dev/null | awk '$6 == "EFI" && $7 == "System" {print $2, $3; exit}')
+if [ -z "$ESP_SECTS" ]; then
+    echo "ERROR: no EFI System partition in $IN" >&2
+    exit 1
+fi
+ESP_START=${ESP_SECTS%% *}; ESP_END=${ESP_SECTS##* }
+dd if="$IN" of="$WORK/esp.img" bs=512 skip="$ESP_START" count="$((ESP_END - ESP_START + 1))" status=none
+mtype -i "$WORK/esp.img" ::/EFI/BOOT/GRUB.CFG \
+    | tr -d '\r' \
+    | sed -e "s/$OLD_LABEL/$NEW_LABEL/g" \
+          -e "s/Fedora Linux $VERSION/Verdant $VERSION/g" \
+          -e "s/Fedora Linux/Verdant/g" > "$WORK/esp-grub.cfg"
+grep -q "search --no-floppy --set=root -l '$NEW_LABEL'" "$WORK/esp-grub.cfg" \
+    || { echo "ERROR: ESP grub.cfg rebrand failed" >&2; exit 1; }
+mdel -i "$WORK/esp.img" ::/EFI/BOOT/GRUB.CFG
+mcopy -i "$WORK/esp.img" "$WORK/esp-grub.cfg" ::/EFI/BOOT/GRUB.CFG
+dd if="$WORK/esp.img" of="$IN" bs=512 seek="$ESP_START" conv=notrunc status=none
+echo "   ESP: $(grep -m1 'search' "$WORK/esp-grub.cfg")"
+
 # --- 4. Verify ------------------------------------------------------------------
 echo ">> Verifying..."
 echo "   label: $(isoinfo -d -i "$IN" 2>/dev/null | sed -n 's/^Volume id: *//p')"
