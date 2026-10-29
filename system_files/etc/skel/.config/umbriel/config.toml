@@ -8,6 +8,9 @@ mod_key = "Super"
 #  xwayland force_zero_scaling = true
 xwayland_native_resolution = true
 
+# Disables built in cheatsheet in favor of the custom noctalia plugin mortalglitch/keymap
+show_cheatsheet = false
+
 #  suppress maximize before first buffer (your "suppress-maximize-events")
 honor_restored_maximize = false
 
@@ -203,10 +206,8 @@ duration_ms = 250
 "Mod+WheelUp"   = { action = "workspace-previous", cooldown_ms = 150 }
 "Mod+WheelDown" = { action = "workspace-next",     cooldown_ms = 150 }
 
-# --- layout -----------------------------------------------------------------
-# [GAP] your Mod+J dwindle split-toggle: documented as `layout-toggle-split`
-#       but NOT in nightly 2026-10-11 (docs are ahead of the build). Enable
-#       once you update:  "Mod+J" = "layout-toggle-split"
+# --- workspace layout ---------------------------------------------------
+"Mod+M" = "workspace-set-layout:toggle:scrolling,dwindle"
 
 # --- fullscreen / maximize --------------------------------------------------
 "Mod+Ctrl+F"  = "window-toggle-maximize"    # your fullscreen mode=maximized
