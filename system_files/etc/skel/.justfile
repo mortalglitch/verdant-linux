@@ -6,8 +6,7 @@
 help:
     just --list
 
-# starship: install the starship prompt (brew if available, else official release
-# binary). Asks for confirmation before installing.
+# starship: install the starship prompt (brew if available, else official release binary). Asks for confirmation before installing.
 starship:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -34,8 +33,7 @@ starship:
     grep -q 'starship init bash' "${HOME}/.bashrc" || echo 'eval "$(starship init bash)"' >> "${HOME}/.bashrc"
     starship --version
 
-# brew: fallback installer (primary path is the baked archive + brew-setup.service,
-# which runs automatically at first boot)
+# brew: fallback installer (primary path is the baked archive + brew-setup.service, which runs automatically at first boot)
 brew:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -45,8 +43,7 @@ brew:
     grep -q 'linuxbrew' "${HOME}/.bashrc" || echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> "${HOME}/.bashrc"
     echo "brew ready — open a new shell (or: source ~/.bashrc)"
 
-# restore-umbriel: restore the original Umbriel config (+ Noctalia palette) from /etc/skel
-# Current files are backed up as <name>.broken-<timestamp>, then the config is reloaded.
+# restore-umbriel: restore the original Umbriel config (+ Noctalia palette) from /etc/skel Current files are backed up as <name>.broken-<timestamp>, then the config is reloaded.
 restore-umbriel:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -73,8 +70,7 @@ restore-umbriel:
       echo "umbriel: reload failed — if the session is broken, log out and back in"
     fi
 
-# restore-noctalia: restore the original Noctalia settings from /etc/skel
-# Current file is backed up as settings.toml.broken-<timestamp>, then reloaded (or restarted).
+# restore-noctalia: restore the original Noctalia settings from /etc/skel Current file is backed up as settings.toml.broken-<timestamp>, then reloaded (or restarted).
 restore-noctalia:
     #!/usr/bin/env bash
     set -euo pipefail

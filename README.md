@@ -1,6 +1,8 @@
 # verdant-linux
 
-Personal bootc image: **Umbriel + Noctalia** on `silverblue-main:44`, with
+TEMP README. More details and links to come. 
+
+bootc image: **Umbriel + Noctalia** on `silverblue-main:44`, with
 Neovim + LazyVim (preinstalled), ghostty, btop, starship (on-demand), ocr-region,
 Homebrew (baked via the Bluefin pattern), and Flatpak + Bazaar.
 
