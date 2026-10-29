@@ -75,25 +75,33 @@ restore-umbriel:
       echo "umbriel: reload failed — if the session is broken, log out and back in"
     fi
 
-# restore-noctalia: restore the original Noctalia settings from /etc/skel Current file is backed up as settings.toml.broken-<timestamp>, then reloaded (or restarted).
+# restore-noctalia: restore the original Noctalia config (bar layout + Verdant palette + keymap plugin) from the canonical tree /usr/share/verdant/configs/noctalia. Current files are backed up as <name>.broken-<timestamp>, then reloaded (or restarted).
 restore-noctalia:
     #!/usr/bin/env bash
     set -euo pipefail
-    src="/etc/skel/.local/state/noctalia/settings.toml"
-    dst="${HOME}/.local/state/noctalia/settings.toml"
-    [ -f "$src" ] || { echo "ERROR: pristine copy missing: $src" >&2; exit 1; }
-    if cmp -s "$src" "$dst"; then
-      echo "ok: noctalia settings.toml already matches the original"
-      exit 0
-    fi
-    if [ -f "$dst" ]; then
-      bak="${dst}.broken-$(date +%Y%m%d-%H%M%S)"
-      mv "$dst" "$bak"
-      echo "backed up noctalia settings.toml -> $(basename "$bak")"
-    fi
-    mkdir -p "$(dirname "$dst")"
-    cp "$src" "$dst"
-    echo "restored noctalia settings.toml"
+    srcdir="/usr/share/verdant/configs/noctalia"
+    [ -d "$srcdir" ] || { echo "ERROR: canonical config tree missing: $srcdir" >&2; exit 1; }
+    restore_file() {
+      local src="$1" dst="$2"
+      [ -f "$src" ] || { echo "ERROR: pristine copy missing: $src" >&2; exit 1; }
+      if cmp -s "$src" "$dst"; then
+        echo "ok: $(basename "$dst") already matches the original"
+        return 0
+      fi
+      if [ -f "$dst" ]; then
+        local bak="${dst}.broken-$(date +%Y%m%d-%H%M%S)"
+        mv "$dst" "$bak"
+        echo "backed up $(basename "$dst") -> $(basename "$bak")"
+      fi
+      mkdir -p "$(dirname "$dst")"
+      cp "$src" "$dst"
+      echo "restored $(basename "$dst")"
+    }
+    restore_file "$srcdir/settings.toml" "${HOME}/.local/state/noctalia/settings.toml"
+    restore_file "$srcdir/palettes/VerdantBrutalistTheme.json" "${HOME}/.config/noctalia/palettes/VerdantBrutalistTheme.json"
+    for f in "$srcdir"/plugins/keymap/*; do
+      restore_file "$f" "${HOME}/.local/share/noctalia/plugins/keymap/$(basename "$f")"
+    done
     if pgrep -x noctalia >/dev/null; then
       if noctalia msg config-reload 2>/dev/null; then
         echo "noctalia: config reloaded"
@@ -105,7 +113,7 @@ restore-noctalia:
       noctalia -d
     fi
 
-# restore-config: restore the original Umbriel (system layer) + Noctalia (skel) config
+# restore-config: restore the original Umbriel + Noctalia config (canonical tree /usr/share/verdant/configs)
 restore-config: restore-umbriel restore-noctalia
     echo "All done — if anything still looks off, log out and back in."
 

@@ -44,6 +44,26 @@ install -m 644 \
   /usr/share/verdant/configs/umbriel/noctalia.toml \
   /etc/xdg/umbriel/
 
+### Noctalia — canonical tree -> skel locations (skel is a generated artifact)
+# The canonical tree /usr/share/verdant/configs/noctalia/ is the single source
+# of truth in the repo; the skel copies below are what new users get in
+# $HOME. Noctalia has no system lookup layer for settings.toml (it's
+# GUI-owned and per-user), so the skel stays the delivery mechanism.
+# Noctalia-owned runtime state (state.toml, .setup-complete,
+# community-templates/, community-palettes/) stays in the repo's skel and is
+# never managed or upgraded.
+install -d /etc/skel/.local/state/noctalia \
+          /etc/skel/.config/noctalia/palettes \
+          /etc/skel/.local/share/noctalia/plugins/keymap
+install -m 644 \
+  /usr/share/verdant/configs/noctalia/settings.toml \
+  /etc/skel/.local/state/noctalia/
+install -m 644 \
+  /usr/share/verdant/configs/noctalia/palettes/VerdantBrutalistTheme.json \
+  /etc/skel/.config/noctalia/palettes/
+cp -f /usr/share/verdant/configs/noctalia/plugins/keymap/* \
+      /etc/skel/.local/share/noctalia/plugins/keymap/
+
 ### Noctalia Greeter (greetd) — replace GDM as the login screen
 # greetd from Fedora, noctalia-greeter from Terra (baked in via system_files)
 dnf5 -y install greetd noctalia-greeter
