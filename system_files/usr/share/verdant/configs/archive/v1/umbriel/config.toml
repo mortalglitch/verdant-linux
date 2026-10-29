@@ -1,0 +1,294 @@
+# ============================================================================
+#  Verdant Umbriel Config
+# ============================================================================
+
+[general]
+mod_key = "Super"
+
+#  xwayland force_zero_scaling = true
+xwayland_native_resolution = true
+
+# Disables built in cheatsheet in favor of the custom noctalia plugin mortalglitch/keymap
+show_cheatsheet = false
+
+#  suppress maximize before first buffer (your "suppress-maximize-events")
+honor_restored_maximize = false
+
+# autostart noctalia
+autostart = ["noctalia"]
+# allow_tearing = false; Umbriel VRR is adaptive_vsync (default true).
+#        Set to false if you want tearing fully off on a VRR panel.
+# adaptive_vsync = true
+
+# ----------------------------------------------------------------------------
+#  Umbriel uses ONE gap (set to inner).
+#  raise up if you want the outer spacing back.
+# ----------------------------------------------------------------------------
+[layout]
+mode = "dwindle"
+gap = 5
+
+[layout.dwindle]
+preserve_split = true
+
+# ----------------------------------------------------------------------------
+#   Input
+# ----------------------------------------------------------------------------
+[input.keyboard]
+layout = "us"                #  kb_layout = us
+
+[input.focus]
+follows_mouse = true         #  follow_mouse = 1
+
+[input.touchpad]
+natural_scroll = true        #  touchpad.natural_scroll
+
+[input.mouse]
+sensitivity = 0.0            #  sensitivity = 0
+
+# ----------------------------------------------------------------------------
+#  Appearance
+# ----------------------------------------------------------------------------
+[appearance]
+border_width = 2
+corner_radius = 10
+# [GAP] rounding_power=2 — Umbriel radius is a plain value, no power
+
+[appearance.blur]
+enabled = true
+radius = 3                   #  blur.size
+saturation = 0.17            #  blur.vibrancy
+
+[appearance.shadow]
+enabled = true
+softness = 4                 #  shadow.range
+# [GAP] shadow.render_power=3 — no direct equivalent (intensity)
+
+# ----------------------------------------------------------------------------
+#  Colors
+# ----------------------------------------------------------------------------
+[colors]
+shadow = "#1a1a1aee"
+
+[colors.border]
+focused  = "#33ccffee"
+unfocused = "#595959aa"
+outer    = "#00ff99ee"
+# [GAP] no per-side outer_border_width key; the green outer ring uses its default width
+# [GAP] active/inactive window opacity (1.0 / 0.90) — no global knob in Umbriel
+
+# ----------------------------------------------------------------------------
+# Animations
+# ----------------------------------------------------------------------------
+[animation]
+duration_ms = 150
+curve = "easeOutQuint"
+
+[animation.beziers]
+easeOutQuint   = [0.23, 1,    0.32, 1]
+easeInOutCubic = [0.65, 0.05, 0.36, 1]
+linear         = [0,    0,    1,    1]
+almostLinear   = [0.5,  0.5,  0.75, 1]
+quick          = [0.15, 0,    0.1,  1]
+
+[animation.springs]
+easy = { damping = 0.9, stiffness = 60 }
+
+# style+scale copied from windowsIn (popin 87%); the spring sets its own
+#       length, so no duration_ms here.
+[animation.windows_in]
+style = "popin"
+scale = 0.87
+curve = "easy"
+
+# windowsOut → fade (Umbriel windows_out is fade/slide only);
+[animation.windows_out]
+style = "fade"
+curve = "linear"
+duration_ms = 280
+
+# workspaces — Umbriel allows "slide" or "reveal"; "reveal" needs a GLSL
+#       shader preset (your fade would be a reveal shader — a great first GLSL
+#       effect). Using shader-free "slide" for now.
+[animation.workspaces]
+style = "slide"
+curve = "easeInOutCubic"
+duration_ms = 250
+
+#  layers;
+[animation.layers]
+curve = "easeOutQuint"
+duration_ms = 200
+
+#  border;
+[animation.border]
+curve = "easeOutQuint"
+duration_ms = 150
+
+# your "fade" (speed 3.03) → unfocused dim; dim = fraction dimmed
+[animation.dim_unfocused]
+dim = 0.25
+duration_ms = 250
+
+# ----------------------------------------------------------------------------
+#   Keybinds   ("Mod" = Super, your mainMod)
+#  noctalia msg binds are verbatim.
+# ----------------------------------------------------------------------------
+[keybinds]
+# --- launchers / apps -------------------------------------------------------
+"Mod+T"      = "spawn:ghostty"
+"Mod+Return" = "spawn:ghostty"
+"Mod+B"      = "spawn:flatpak run app.zen_browser.zen"
+"Mod+E"      = "spawn:nautilus"
+
+# --- Noctalia IPC (verbatim) ------------------------------------------------
+"Mod+R"     = "spawn:noctalia msg panel-toggle launcher"
+"Mod+Space" = "spawn:noctalia msg panel-toggle launcher"
+# Keymap plugin panel (the CLI `panel-toggle <plugin:panel>` route reports
+# "unknown panel" for plugin panels, so this dispatches to the plugin's
+# headless service and toggles in-process).
+"Mod+K"     = "spawn:noctalia msg plugin mortalglitch/keymap:service all toggle"
+
+# --- window basics ----------------------------------------------------------
+"Mod+Q" = "window-close"
+"Mod+V" = "window-toggle-floating"
+
+# --- focus ------------------------------------------------------------------
+"Mod+Left"  = "window-focus-left"
+"Mod+Right" = "window-focus-right"
+"Mod+Up"    = "window-focus-up"
+"Mod+Down"  = "window-focus-down"
+
+# --- resize (your Mod+Shift+arrows, ±20px relative, repeating) ---------------
+"Mod+Shift+Right" = "window-modify-width-right:0.02"
+"Mod+Shift+Left"  = "window-modify-width-left:0.02"
+"Mod+Shift+Down"  = "window-modify-height-down:0.02"
+"Mod+Shift+Up"    = "window-modify-height-up:0.02"
+
+# --- workspaces 1–10  (your key 0 = workspace 10) ---------------------------
+"Mod+1" = "workspace-switch:1"
+"Mod+2" = "workspace-switch:2"
+"Mod+3" = "workspace-switch:3"
+"Mod+4" = "workspace-switch:4"
+"Mod+5" = "workspace-switch:5"
+"Mod+6" = "workspace-switch:6"
+"Mod+7" = "workspace-switch:7"
+"Mod+8" = "workspace-switch:8"
+"Mod+9" = "workspace-switch:9"
+"Mod+0" = "workspace-switch:10"
+
+"Mod+Shift+1" = "window-move-to-workspace:1"
+"Mod+Shift+2" = "window-move-to-workspace:2"
+"Mod+Shift+3" = "window-move-to-workspace:3"
+"Mod+Shift+4" = "window-move-to-workspace:4"
+"Mod+Shift+5" = "window-move-to-workspace:5"
+"Mod+Shift+6" = "window-move-to-workspace:6"
+"Mod+Shift+7" = "window-move-to-workspace:7"
+"Mod+Shift+8" = "window-move-to-workspace:8"
+"Mod+Shift+9" = "window-move-to-workspace:9"
+"Mod+Shift+0" = "window-move-to-workspace:10"
+
+"Mod+Ctrl+1" = "window-move-to-workspace-silent:1"
+"Mod+Ctrl+2" = "window-move-to-workspace-silent:2"
+"Mod+Ctrl+3" = "window-move-to-workspace-silent:3"
+"Mod+Ctrl+4" = "window-move-to-workspace-silent:4"
+"Mod+Ctrl+5" = "window-move-to-workspace-silent:5"
+"Mod+Ctrl+6" = "window-move-to-workspace-silent:6"
+"Mod+Ctrl+7" = "window-move-to-workspace-silent:7"
+"Mod+Ctrl+8" = "window-move-to-workspace-silent:8"
+"Mod+Ctrl+9" = "window-move-to-workspace-silent:9"
+"Mod+Ctrl+0" = "window-move-to-workspace-silent:10"
+
+# --- workspace navigation ---------------------------------------------------
+"Mod+Shift+Tab" = "workspace-next"
+"Mod+Ctrl+Tab"  = "workspace-previous"
+"Mod+Backslash" = "workspace-focus-last"
+"Mod+WheelUp"   = { action = "workspace-previous", cooldown_ms = 150 }
+"Mod+WheelDown" = { action = "workspace-next",     cooldown_ms = 150 }
+
+# --- workspace layout ---------------------------------------------------
+"Mod+M" = "workspace-set-layout:toggle:scrolling,dwindle"
+
+# --- fullscreen / maximize --------------------------------------------------
+"Mod+Ctrl+F"  = "window-toggle-maximize"    # your fullscreen mode=maximized
+"Mod+Shift+F" = "window-toggle-fullscreen"  # your fullscreen mode=fullscreen
+
+# --- scratchpad -------------------------------------------------------------
+"Mod+S"       = "scratchpad-toggle"
+"Mod+Shift+S" = "window-move-to-scratchpad"
+# Restore the focused scratchpad window to the CURRENT workspace.
+# (Note: window-restore-from-scratchpad goes to the current workspace;
+#  window-toggle-scratchpad returns it to the original workspace.)
+"Mod+Ctrl+S"  = "window-restore-from-scratchpad"
+
+# --- screenshots / OCR ------------------------------------------------------
+# Super+Print = LumineCapture (COPR netflate/lumine-capture): fast region
+# capture + annotate (magnifier, numbered arrows, OCR, redact, pin to screen).
+# wlr-screencopy backend — same protocol as grim, no portal needed.
+# Bare Print stays on the Noctalia fullscreen widget; Super+Ctrl+Print = ocr-region.
+"Print"        = "spawn:noctalia msg screenshot-fullscreen pick"
+"Mod+Print"    = "spawn:lumine-capture"
+"Mod+Ctrl+Print" = "spawn:~/.local/bin/ocr-region"
+
+# [GAP] Mod+LMB drag / Mod+RMB resize (your mouse:272 / mouse:273) — Umbriel has
+#       no explicit drag/resize action; floating windows are usually draggable
+#       by the compositor. Left unbound.
+
+# --- hardware keys (verbatim noctalia msg) ----------------------------------
+# [GAP] the `locked` field is documented but not in nightly 2026-10-11; dropped.
+"XF86AudioRaiseVolume"  = { action = "spawn:noctalia msg volume-up",     repeat = true }
+"XF86AudioLowerVolume"  = { action = "spawn:noctalia msg volume-down",   repeat = true }
+"XF86AudioMute"         = { action = "spawn:noctalia msg volume-mute" }
+"XF86AudioMicMute"      = { action = "spawn:noctalia msg mic-mute" }
+"XF86AudioPlay"         = { action = "spawn:noctalia msg media toggle" }
+"XF86AudioPause"        = { action = "spawn:noctalia msg media toggle" }
+"XF86AudioNext"         = { action = "spawn:noctalia msg media next" }
+"XF86AudioPrev"         = { action = "spawn:noctalia msg media previous" }
+"XF86MonBrightnessUp"   = { action = "spawn:noctalia msg brightness-up",   repeat = true }
+"XF86MonBrightnessDown" = { action = "spawn:noctalia msg brightness-down", repeat = true }
+
+# ----------------------------------------------------------------------------
+#   Window rules
+# ----------------------------------------------------------------------------
+# Unfocused-window transparency — inactive_opacity = 0.90.
+# Every non-focused window drops to 90% opacity (10% see-through).
+[[window_rule]]
+match.is_focused = false
+opacity = 0.90
+
+# kitty at 95% opacity (your kitty opacity rule)
+# Disabled as kitty doesn't ship with the build
+# [[window_rule]]
+# match.app_id = "^kitty$"
+# opacity = 0.95
+
+# Ghostty at 95% opacity — a little transparency in your terminal
+[[window_rule]]
+match.app_id = "^com.mitchellh.ghostty$"
+opacity = 0.95
+
+# ----------------------------------------------------------------------------
+#  Not ported (secondary) — add when you want them:
+#   • monitor config  → per-[output] sections (Umbriel auto-detects for now)
+#   • environment.lua → [environment]  KEY = "value"
+# ============================================================================
+
+
+# ----------------------------------------------------------------------------
+# Workspace Configuration - Below was the old script to make workspaces have
+# chinese/japanese characters. Didn't work well.
+# Eventually had to use:
+# [output."eDP-1"]
+# scale = 1.2
+# workspaces = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
+#
+# Left the note here just incase someone wants to weeb it up like I did for a
+# bit. <^.^>
+# ============================================================================
+
+# [[output]]
+# name = "eDP-1"
+# workspaces = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
+
+[include.optional]
+files = ["noctalia.toml"]

@@ -43,12 +43,17 @@ brew:
     grep -q 'linuxbrew' "${HOME}/.bashrc" || echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> "${HOME}/.bashrc"
     echo "brew ready — open a new shell (or: source ~/.bashrc)"
 
-# restore-umbriel: restore the original Umbriel config (+ Noctalia palette) from /etc/skel Current files are backed up as <name>.broken-<timestamp>, then the config is reloaded.
+# restore-umbriel: restore the Verdant Umbriel config (+ Noctalia palette) from the system layer (/etc/xdg/umbriel). Current files are backed up as <name>.broken-<timestamp>, then the config is reloaded.
 restore-umbriel:
     #!/usr/bin/env bash
     set -euo pipefail
+    if [ ! -f "${HOME}/.config/umbriel/config.toml" ]; then
+      echo "no user config — you're running on the system config (/etc/xdg/umbriel), which updates automatically with the image"
+      echo "to get an editable per-user copy: just customize-umbriel"
+      exit 0
+    fi
     for f in config.toml noctalia.toml; do
-      src="/etc/skel/.config/umbriel/$f"
+      src="/etc/xdg/umbriel/$f"
       dst="${HOME}/.config/umbriel/$f"
       [ -f "$src" ] || { echo "ERROR: pristine copy missing: $src" >&2; exit 1; }
       if cmp -s "$src" "$dst"; then
@@ -100,7 +105,7 @@ restore-noctalia:
       noctalia -d
     fi
 
-# restore-config: restore the original Umbriel + Noctalia config from /etc/skel
+# restore-config: restore the original Umbriel (system layer) + Noctalia (skel) config
 restore-config: restore-umbriel restore-noctalia
     echo "All done — if anything still looks off, log out and back in."
 

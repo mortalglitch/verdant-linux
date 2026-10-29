@@ -26,6 +26,24 @@ systemctl enable systemd-timesyncd.service
 ### Umbriel + Noctalia (Terra repo, baked in via system_files/etc/yum.repos.d/terra.repo)
 dnf5 -y install umbriel-nightly noctalia
 
+### Umbriel system config — /etc/xdg/umbriel (documented system lookup layer)
+# Canonical config tree: /usr/share/verdant/configs/ (VERSION = managed-set
+# version, bumped in the same commit as any managed-file change). Umbriel's
+# config lookup is first-existing-file-wins: ~/.config/umbriel/config.toml,
+# then $XDG_CONFIG_DIRS/umbriel/config.toml (= /etc/xdg/umbriel/), then the
+# Terra package's /usr/share/umbriel/config.toml. New users have no user
+# config, so this system config applies — and it updates automatically on
+# `bootc upgrade` (the /etc subvolume carries it). Users who want an editable
+# per-user copy run `just customize-umbriel` (shadows this layer).
+# /usr/share/umbriel is Terra-package-owned (overwritten on package updates)
+# — never put Verdant config there. [include] resolves relative to the
+# including file, so noctalia.toml (palette include) travels with the dir.
+install -d /etc/xdg/umbriel
+install -m 644 \
+  /usr/share/verdant/configs/umbriel/config.toml \
+  /usr/share/verdant/configs/umbriel/noctalia.toml \
+  /etc/xdg/umbriel/
+
 ### Noctalia Greeter (greetd) — replace GDM as the login screen
 # greetd from Fedora, noctalia-greeter from Terra (baked in via system_files)
 dnf5 -y install greetd noctalia-greeter
@@ -153,7 +171,7 @@ flatpak install -y --system flathub com.github.tchx84.Flatseal    # flatpak perm
 flatpak install -y --system flathub io.github.flattool.Warehouse  # flatpak remote/override manager
 flatpak install -y --system flathub it.mijorus.gearlever          # AppImage manager
 
-### LumineCapture — screenshot/annotation tool (bound to Super+Print in the skel umbriel config)
+### LumineCapture — screenshot/annotation tool (bound to Super+Print in the Verdant umbriel config)
 # wlr-screencopy backend (same protocol as grim) — no portal needed.
 # COPR: enable -> install -> disable (uBlue convention: COPRs left disabled in the image).
 cat > /etc/yum.repos.d/lumine-capture.copr.repo <<'EOF'
