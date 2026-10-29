@@ -64,10 +64,12 @@ restore-umbriel:
         bak="${dst}.broken-$(date +%Y%m%d-%H%M%S)"
         mv "$dst" "$bak"
         echo "backed up umbriel/$f -> $(basename "$bak")"
+        ls -1t "${dst}".broken-* 2>/dev/null | tail -n +4 | while read -r old; do rm -f "$old"; done
       fi
       mkdir -p "$(dirname "$dst")"
       cp "$src" "$dst"
       echo "restored umbriel/$f"
+      VERDANT_CONFIGS_LEDGER="${HOME}/.config/verdant/configs" /usr/share/verdant/configs/verdant-configs.sh ledger-file "${HOME}/.config/umbriel/$f" 2>/dev/null || true
     done
     if umbriel msg config-reload 2>/dev/null; then
       echo "umbriel: config reloaded"
@@ -92,6 +94,7 @@ restore-noctalia:
         local bak="${dst}.broken-$(date +%Y%m%d-%H%M%S)"
         mv "$dst" "$bak"
         echo "backed up $(basename "$dst") -> $(basename "$bak")"
+        ls -1t "${dst}".broken-* 2>/dev/null | tail -n +4 | while read -r old; do rm -f "$old"; done
       fi
       mkdir -p "$(dirname "$dst")"
       cp "$src" "$dst"
@@ -101,6 +104,12 @@ restore-noctalia:
     restore_file "$srcdir/palettes/VerdantBrutalistTheme.json" "${HOME}/.config/noctalia/palettes/VerdantBrutalistTheme.json"
     for f in "$srcdir"/plugins/keymap/*; do
       restore_file "$f" "${HOME}/.local/share/noctalia/plugins/keymap/$(basename "$f")"
+    done
+    # Ledger invariant: restored files become the new baseline
+    for f in "${HOME}/.local/state/noctalia/settings.toml" \
+             "${HOME}/.config/noctalia/palettes/VerdantBrutalistTheme.json" \
+             "${HOME}"/.local/share/noctalia/plugins/keymap/*; do
+      [ -f "$f" ] && /usr/share/verdant/configs/verdant-configs.sh ledger-file "$f" 2>/dev/null || true
     done
     if pgrep -x noctalia >/dev/null; then
       if noctalia msg config-reload 2>/dev/null; then
@@ -116,6 +125,21 @@ restore-noctalia:
 # restore-config: restore the original Umbriel + Noctalia config (canonical tree /usr/share/verdant/configs)
 restore-config: restore-umbriel restore-noctalia
     echo "All done — if anything still looks off, log out and back in."
+
+# check-configs: read-only status of the Verdant config tree (up to date / what would change)
+check-configs:
+    #!/usr/bin/env bash
+    /usr/share/verdant/configs/verdant-configs.sh check
+
+# upgrade-configs: apply Verdant config updates as 3-way merges (your local changes survive). Use --force to re-install files you deleted.
+upgrade-configs *flags:
+    #!/usr/bin/env bash
+    /usr/share/verdant/configs/verdant-configs.sh upgrade {{ flags }}
+
+# customize-umbriel: copy the system Umbriel config (/etc/xdg/umbriel) to ~/.config/umbriel so you can edit it; it shadows the system config and updates merge against your version
+customize-umbriel:
+    #!/usr/bin/env bash
+    /usr/share/verdant/configs/verdant-configs.sh customize-umbriel
 
 # ssh: optional SSH access — just ssh <enable|disable|status>
 ssh *action:

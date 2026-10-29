@@ -1,0 +1,10 @@
+[Unit]
+Description=Verdant config update notification
+After=graphical-session.target
+Wants=graphical-session.target
+ConditionEnvironment=WAYLAND_DISPLAY
+ConditionPathExists=/usr/share/verdant/configs/VERSION
+
+[Service]
+Type=oneshot
+ExecStart=/usr/share/verdant/configs/verdant-configs.sh notify-check
