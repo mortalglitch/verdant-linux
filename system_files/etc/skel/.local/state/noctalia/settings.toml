@@ -46,7 +46,7 @@ enabled = [ "mortalglitch/keymap" ]
 [shell]
 font_family = "Caladea"
 settings_window_translucent = true
-telemetry_enabled = true
+telemetry_enabled = false
 
     [shell.panel]
     transparency_mode = "glass"
