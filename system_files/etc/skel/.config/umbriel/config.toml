@@ -1,80 +1,50 @@
 # ============================================================================
-#  Umbriel  —  ported from your Hyprland/Noctalia Lua config
-#  source : ~/.config/hypr/          (Lua, split files)
-#  target : ~/.config/umbriel/config.toml   (this file)
-#  date   : 2026-10-17
-#
-#  Live-reload : edit + save, Umbriel picks it up.
-#  Validate    : umbriel config validate -c ~/.config/umbriel/config.toml
-#  Log         : journalctl -u umbriel
-#
-#  Legend  [OK]   exact port
-#          [TUNE] re-derived — adjust by feel
-#          [GAP]  no 1:1 Umbriel equivalent (noted)
-#
-#  Can be split into files with  [include]  "dir/other.toml"  later.
+#  Verdant Umbriel Config
 # ============================================================================
-
-# Reveal transition (workspace_wipe) — disabled per your call. To re-enable:
-#   uncomment the [include] below, and set [animation.workspaces] to
-#   style = "reveal" / effect = "workspace_wipe".
-# [include]
-# files = ["/usr/share/umbriel/effects/animation/workspace_wipe/effect.toml"]
-
-# ----------------------------------------------------------------------------
-#  [TUNE] eDP-1 — scale left at the compositor default (1.0) so the image
-#  works on any panel (e.g. a different Framework 16 GPU/CPU). This section
-#  now only renames workspaces 1-10 to Chinese numerals.
-# ----------------------------------------------------------------------------
-[output."eDP-1"]
-workspaces = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
-# The above renames the workspaces but makes it a fixed list. This will need to be deleted to return to a dynamic list.
 
 [general]
 mod_key = "Super"
-# [OK]  your general.layout = "dwindle"  (moved to [layout] below)
-# [OK]  xwayland force_zero_scaling = true
+
+#  xwayland force_zero_scaling = true
 xwayland_native_resolution = true
-# [OK]  suppress maximize before first buffer (your "suppress-maximize-events")
+
+#  suppress maximize before first buffer (your "suppress-maximize-events")
 honor_restored_maximize = false
-# [OK]  autostart noctalia
+
+# autostart noctalia
 autostart = ["noctalia"]
-# [GAP] force_default_wallpaper / disable_hyprland_logo / render_ahead — no equivalents
-# [TUNE] your allow_tearing = false; Umbriel VRR is adaptive_vsync (default true).
+# allow_tearing = false; Umbriel VRR is adaptive_vsync (default true).
 #        Set to false if you want tearing fully off on a VRR panel.
 # adaptive_vsync = true
 
 # ----------------------------------------------------------------------------
-#  [OK]  Layout — dwindle + gaps
-#  Hyprland used gaps_in=5 / gaps_out=8; Umbriel uses ONE gap (set to inner).
-#  [TUNE] raise to 8 if you want the outer spacing back.
+#  Umbriel uses ONE gap (set to inner).
+#  raise up if you want the outer spacing back.
 # ----------------------------------------------------------------------------
 [layout]
 mode = "dwindle"
 gap = 5
 
 [layout.dwindle]
-preserve_split = true        # [OK]
+preserve_split = true
 
 # ----------------------------------------------------------------------------
-#  [OK]  Input
+#   Input
 # ----------------------------------------------------------------------------
 [input.keyboard]
-layout = "us"                # [OK]  kb_layout = us
+layout = "us"                #  kb_layout = us
 
 [input.focus]
-follows_mouse = true         # [OK]  follow_mouse = 1
+follows_mouse = true         #  follow_mouse = 1
 
 [input.touchpad]
-natural_scroll = true        # [OK]  touchpad.natural_scroll
+natural_scroll = true        #  touchpad.natural_scroll
 
 [input.mouse]
-sensitivity = 0.0            # [OK]  sensitivity = 0
+sensitivity = 0.0            #  sensitivity = 0
 
 # ----------------------------------------------------------------------------
-#  [OK]  Appearance — borders / corners / blur / shadow
-#  Hyprland: border_size=2, rounding=10, blur size=3 vibrancy=0.17,
-#            shadow enabled range=4 color=0xee1a1a1a
+#  Appearance
 # ----------------------------------------------------------------------------
 [appearance]
 border_width = 2
@@ -83,18 +53,16 @@ corner_radius = 10
 
 [appearance.blur]
 enabled = true
-radius = 3                   # [OK]  blur.size
-saturation = 0.17            # [OK]  blur.vibrancy
+radius = 3                   #  blur.size
+saturation = 0.17            #  blur.vibrancy
 
 [appearance.shadow]
 enabled = true
-softness = 4                 # [OK]  shadow.range
+softness = 4                 #  shadow.range
 # [GAP] shadow.render_power=3 — no direct equivalent (intensity)
 
 # ----------------------------------------------------------------------------
-#  [OK]  Colors (from your decorations.lua look-and-feel)
-#  Your ACTIVE border was a cyan→green gradient (33ccffee → 00ff99ee).
-#  Umbriel has no gradient, so I split it: focused=cyan, outer=green.
+#  Colors
 # ----------------------------------------------------------------------------
 [colors]
 shadow = "#1a1a1aee"
@@ -107,10 +75,7 @@ outer    = "#00ff99ee"
 # [GAP] active/inactive window opacity (1.0 / 0.90) — no global knob in Umbriel
 
 # ----------------------------------------------------------------------------
-#  [OK]  Animations
-#  Bezier curves copied EXACTLY.
-#  Hyprland `speed` has NO 1:1 Umbriel `duration_ms` — durations are [TUNE],
-#  set by relative feel (higher speed ⇒ shorter ms).  Spring re-derived.
+# Animations
 # ----------------------------------------------------------------------------
 [animation]
 duration_ms = 150
@@ -124,24 +89,22 @@ almostLinear   = [0.5,  0.5,  0.75, 1]
 quick          = [0.15, 0,    0.1,  1]
 
 [animation.springs]
-# [TUNE] re-derived from Hyprland easy = mass 1, stiffness 71.26, dampening 15.83
-#        (≈0.94 damping ratio: smooth, barely-overshooting). Adjust to taste.
 easy = { damping = 0.9, stiffness = 60 }
 
-# [OK]  style+scale copied from windowsIn (popin 87%); the spring sets its own
+# style+scale copied from windowsIn (popin 87%); the spring sets its own
 #       length, so no duration_ms here.
 [animation.windows_in]
 style = "popin"
 scale = 0.87
 curve = "easy"
 
-# [OK]  windowsOut → fade (Umbriel windows_out is fade/slide only); [TUNE]
+# windowsOut → fade (Umbriel windows_out is fade/slide only);
 [animation.windows_out]
 style = "fade"
 curve = "linear"
 duration_ms = 280
 
-# [OK]  workspaces — Umbriel allows "slide" or "reveal"; "reveal" needs a GLSL
+# workspaces — Umbriel allows "slide" or "reveal"; "reveal" needs a GLSL
 #       shader preset (your fade would be a reveal shader — a great first GLSL
 #       effect). Using shader-free "slide" for now.
 [animation.workspaces]
@@ -149,29 +112,27 @@ style = "slide"
 curve = "easeInOutCubic"
 duration_ms = 250
 
-# [OK]  layers; [TUNE]
+#  layers;
 [animation.layers]
 curve = "easeOutQuint"
 duration_ms = 200
 
-# [OK]  border; [TUNE]
+#  border;
 [animation.border]
 curve = "easeOutQuint"
 duration_ms = 150
 
-# [TUNE] your "fade" (speed 3.03) → unfocused dim; dim = fraction dimmed
+# your "fade" (speed 3.03) → unfocused dim; dim = fraction dimmed
 [animation.dim_unfocused]
 dim = 0.25
 duration_ms = 250
 
 # ----------------------------------------------------------------------------
-#  [OK]  Keybinds   ("Mod" = Super, your mainMod)
+#   Keybinds   ("Mod" = Super, your mainMod)
 #  noctalia msg binds are verbatim.
 # ----------------------------------------------------------------------------
 [keybinds]
 # --- launchers / apps -------------------------------------------------------
-# [OK]  your config wrapped these in `uwsm app -- ` (a Hyprland session mgr).
-#       If uwsm works under Umbriel, prepend it:  "spawn:uwsm app -- ghostty"
 "Mod+T"      = "spawn:ghostty"
 "Mod+Return" = "spawn:ghostty"
 "Mod+B"      = "spawn:flatpak run app.zen_browser.zen"
@@ -196,8 +157,6 @@ duration_ms = 250
 "Mod+Down"  = "window-focus-down"
 
 # --- resize (your Mod+Shift+arrows, ±20px relative, repeating) ---------------
-# [TUNE] Hyprland used ±20px; Umbriel resizes by FRACTION of the extent.
-#        0.02 ≈ a small nudge. Raise/lower magnitude, flip sign if inverted.
 "Mod+Shift+Right" = "window-modify-width-right:0.02"
 "Mod+Shift+Left"  = "window-modify-width-left:0.02"
 "Mod+Shift+Down"  = "window-modify-height-down:0.02"
@@ -250,8 +209,8 @@ duration_ms = 250
 #       once you update:  "Mod+J" = "layout-toggle-split"
 
 # --- fullscreen / maximize --------------------------------------------------
-"Mod+Ctrl+F"  = "window-toggle-maximize"    # [OK] your fullscreen mode=maximized
-"Mod+Shift+F" = "window-toggle-fullscreen"  # [OK] your fullscreen mode=fullscreen
+"Mod+Ctrl+F"  = "window-toggle-maximize"    # your fullscreen mode=maximized
+"Mod+Shift+F" = "window-toggle-fullscreen"  # your fullscreen mode=fullscreen
 
 # --- scratchpad -------------------------------------------------------------
 "Mod+S"       = "scratchpad-toggle"
@@ -288,18 +247,19 @@ duration_ms = 250
 "XF86MonBrightnessDown" = { action = "spawn:noctalia msg brightness-down", repeat = true }
 
 # ----------------------------------------------------------------------------
-#  [OK]  Window rules
+#   Window rules
 # ----------------------------------------------------------------------------
-# Unfocused-window transparency — your Hyprland inactive_opacity = 0.90.
+# Unfocused-window transparency — inactive_opacity = 0.90.
 # Every non-focused window drops to 90% opacity (10% see-through).
 [[window_rule]]
 match.is_focused = false
 opacity = 0.90
 
 # kitty at 95% opacity (your kitty opacity rule)
-[[window_rule]]
-match.app_id = "^kitty$"
-opacity = 0.95
+# Disabled as kitty doesn't ship with the build
+# [[window_rule]]
+# match.app_id = "^kitty$"
+# opacity = 0.95
 
 # Ghostty at 95% opacity — a little transparency in your terminal
 [[window_rule]]
@@ -314,7 +274,15 @@ opacity = 0.95
 
 
 # ----------------------------------------------------------------------------
-# Workspace Configuration
+# Workspace Configuration - Below was the old script to make workspaces have
+# chinese/japanese characters. Didn't work well.
+# Eventually had to use:
+# [output."eDP-1"]
+# scale = 1.2
+# workspaces = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"]
+#
+# Left the note here just incase someone wants to weeb it up like I did for a
+# bit. <^.^>
 # ============================================================================
 
 # [[output]]
