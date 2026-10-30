@@ -99,12 +99,26 @@ def categorize(action):
 
 
 def find_config():
+    """First hit wins, mirroring Umbriel's own config lookup order:
+    $XDG_CONFIG_HOME/umbriel/config.toml, then each directory in
+    $XDG_CONFIG_DIRS (default /etc/xdg), then ~/.config as a last resort.
+
+    The system layer matters: on fresh installs the only config is the
+    /etc/xdg/umbriel/config.toml baked into the image (see the build's
+    `customize-umbriel` recipe), and XDG_CONFIG_HOME alone never sees it."""
     home = os.path.expanduser("~")
     xcfg = os.environ.get("XDG_CONFIG_HOME") or os.path.join(home, ".config")
-    for c in (os.path.join(xcfg, "umbriel", "config.toml"),
-              os.path.join(home, ".config", "umbriel", "config.toml")):
-        if os.path.isfile(c):
-            return c
+    dirs = [xcfg]
+    for d in (os.environ.get("XDG_CONFIG_DIRS") or "/etc/xdg").split(os.pathsep):
+        if d and d not in dirs:
+            dirs.append(d)
+    fallback = os.path.join(home, ".config")
+    if fallback not in dirs:
+        dirs.append(fallback)
+    for d in dirs:
+        cand = os.path.join(d, "umbriel", "config.toml")
+        if os.path.isfile(cand):
+            return cand
     return None
 
 

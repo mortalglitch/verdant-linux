@@ -12,7 +12,8 @@ dnf5 -y install \
   ghostty btop just \
   gedit \
   nvim gcc make \
-  grim tesseract wl-clipboard libnotify
+  grim tesseract wl-clipboard libnotify \
+  fastfetch
 
 ### NTP — enable systemd-timesyncd (the uBlue base ships it UNENABLED)
 # The timesyncd binary is in the base (merged into systemd-udev in Fedora 44 —
@@ -89,10 +90,18 @@ systemctl enable greetd
 # and GRUB menu (bootc-image-builder bakes this into .buildstamp at ISO build
 # time) and the installed system's release strings. ID=fedora stays — repos
 # and tooling key off it, not NAME.
-sed -i -E \
-  -e 's/^NAME=.*/NAME="Verdant"/' \
-  -e 's/^PRETTY_NAME=.*/PRETTY_NAME="Verdant"/' \
-  /etc/os-release
+# Both copies need it: /etc/os-release feeds the ISO .buildstamp, but the
+# installed system reads /usr/lib/os-release — that's where the GRUB menu
+# title (grub-mkconfig_lib) and the default hostname (systemd's
+# DEFAULT_HOSTNAME) actually come from. Patching only /etc/os-release is why
+# the laptop showed "Fedora" in GRUB and @fedora in the prompt.
+for osrel in /etc/os-release /usr/lib/os-release; do
+  sed -i -E \
+    -e 's/^NAME=.*/NAME="Verdant"/' \
+    -e 's/^PRETTY_NAME=.*/PRETTY_NAME="Verdant"/' \
+    -e 's/^DEFAULT_HOSTNAME=.*/DEFAULT_HOSTNAME=verdant/' \
+    "$osrel"
+done
 
 # Noctalia Greeter: static admin config (wins over Noctalia Sync — the sync UI
 # lives in Noctalia Shell, so a static toml is the reliable route for a

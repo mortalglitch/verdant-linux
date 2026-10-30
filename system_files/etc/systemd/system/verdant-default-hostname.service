@@ -1,0 +1,11 @@
+[Unit]
+Description=Set Verdant default hostname
+After=systemd-hostnamed.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/sh -c 'test -s /etc/hostname || { echo verdant > /etc/hostname; /usr/bin/hostnamectl set-hostname verdant; }'
+
+[Install]
+WantedBy=multi-user.target

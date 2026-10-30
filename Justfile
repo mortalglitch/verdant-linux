@@ -269,9 +269,13 @@ _rootful_load_image $target_image=image_name $tag=default_tag:
         exit 0
     fi
 
-    # If the image is already in the rootful store, nothing to load
+    # If the image is already in the rootful store, nothing to load — but only
+    # when it matches the user-store image (or the user store has none). A
+    # rootful image with a DIFFERENT ID is stale: the user store holds a newer
+    # build and must be synced down, or bib bakes the old image.
     ROOTFUL_IMG_ID=$(just sudoif podman images --filter reference="${target_image}:${tag}" --format "'{{ '{{.ID}}' }}'")
-    if [[ -n "$ROOTFUL_IMG_ID" ]]; then
+    USER_IMG_ID=$(podman images --filter reference="${target_image}:${tag}" --format "'{{ '{{.ID}}' }}'")
+    if [[ -n "$ROOTFUL_IMG_ID" && ( -z "$USER_IMG_ID" || "$ROOTFUL_IMG_ID" == "$USER_IMG_ID" ) ]]; then
         echo "Image already present in rootful podman, skipping load."
         exit 0
     fi
@@ -281,8 +285,6 @@ _rootful_load_image $target_image=image_name $tag=default_tag:
     resolved_tag=$(podman inspect -t image "${target_image}:${tag}" | jq -r '.[].RepoTags.[0]')
     return_code=$?
     set -e
-
-    USER_IMG_ID=$(podman images --filter reference="${target_image}:${tag}" --format "'{{ '{{.ID}}' }}'")
 
     if [[ $return_code -eq 0 ]]; then
         # If the image is found, load it into rootful podman
