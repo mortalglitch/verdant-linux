@@ -5,7 +5,11 @@ After=systemd-hostnamed.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/bin/sh -c 'test -s /etc/hostname || { echo verdant > /etc/hostname; /usr/bin/hostnamectl set-hostname verdant; }'
+# Overwrite the installer's default ("fedora") and empty hostnames, but leave
+# any other (user-chosen) hostname alone. anaconda writes "fedora" into
+# /etc/hostname at install time when no `hostname` kickstart directive is set,
+# so a plain `test -s` guard never fires and the box stays "fedora".
+ExecStart=/usr/bin/sh -c 'h=$(cat /etc/hostname 2>/dev/null); if [ -z "$h" ] || [ "$h" = "fedora" ]; then echo verdant > /etc/hostname; /usr/bin/hostnamectl set-hostname verdant; fi'
 
 [Install]
 WantedBy=multi-user.target

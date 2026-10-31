@@ -17,12 +17,20 @@
 # The kickstart intentionally has no `clearpart` (so the user chooses the
 # install destination) and no `bootc switch` (bootc-image-builder auto-adds
 # the ostreecontainer directive for the embedded image).
+#
+# Hostname: do NOT use the standalone `hostname` kickstart command here —
+# anaconda (RHEL 10 / Fedora 44 era) removed it and aborts the install with
+# "Unknown command: hostname". The installed system's
+# verdant-default-hostname.service sets "verdant" at first boot instead.
 [customizations.installer.kickstart]
 contents = """
 %post
-# noop — the embedded image is deployed via the auto-added ostreecontainer
-# directive; nothing else to do after install.
-true
+# Regenerate the installed initramfs so the Plymouth spinner theme (Verdant
+# watermark) is embedded from the installed /usr. The installer-generated
+# initramfs otherwise carries the installer environment's (Fedora) theme,
+# which is why fresh installs show the Fedora logo on the boot splash while
+# shutdown (live /usr) shows Verdant. Non-fatal on purpose.
+dracut --regenerate-all --force || true
 %end
 """
 
