@@ -486,3 +486,22 @@ format:
     fi
     # Run shfmt on all Bash scripts
     find . -iname "*.sh" -type f -exec shfmt --write "{}" ';'
+
+# Validate the shipped Umbriel config against the Umbriel binary inside the
+# built image. umbriel-nightly is a moving target — a config-syntax change
+# upstream (e.g. the 2026-10-30 switch from `action:arg` to `action arg`)
+# otherwise only surfaces on an installed laptop. Run after `just build`.
+[group('Utility')]
+validate-config $target_image=image_name $tag=default_tag:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    CFG_DIR="$(pwd)/system_files/usr/share/verdant/configs/umbriel"
+    VALIDATE_DIR=$(mktemp -d)
+    trap 'rm -rf "${VALIDATE_DIR}"' EXIT
+    cp -f "${CFG_DIR}"/*.toml "${VALIDATE_DIR}"/
+
+    podman run --rm --pull=never \
+      -v "${VALIDATE_DIR}:/tmp/cfg:ro,Z" \
+      "localhost/${target_image}:${tag}" \
+      umbriel config validate -c /tmp/cfg/config.toml
