@@ -357,18 +357,15 @@ build-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_bui
 build-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "raw" "disk_config/disk.toml")
 
 # Build an ISO virtual machine image (then brand it as Verdant).
-# The image is tagged under its GHCR reference in the rootful store before
-# running bootc-image-builder, so the installer records
-# ghcr.io/<org>/<image>:<tag> (not localhost/...) as the update source for
-# `bootc upgrade` on ISO-installed systems.
+# The ISO is built from the GHCR reference (see _iso-bib) so installed
+# systems record ghcr.io/<org>/<image>:<tag> -- not localhost/... -- as the
+# update source for `bootc upgrade`.
 [group('Build Virtal Machine Image')]
-build-iso $target_image=("localhost/" + image_name) $tag=default_tag: (_rootful_load_image target_image tag)
+build-iso $target_image=("localhost/" + image_name) $tag=default_tag:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    just sudoif podman tag "${target_image}:${tag}" "ghcr.io/${repo_organization}/${image_name}:${tag}"
-    just _build-bib "ghcr.io/${repo_organization}/${image_name}" "${tag}" "iso" "disk_config/iso.toml"
-    just brand-iso
+    just _iso-bib "${target_image}" "${tag}"
 
 # Rebuild a QCOW2 virtual machine image
 [group('Build Virtal Machine Image')]
@@ -378,9 +375,29 @@ rebuild-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_r
 [group('Build Virtal Machine Image')]
 rebuild-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "raw" "disk_config/disk.toml")
 
-# Rebuild an ISO virtual machine image (then brand it as Verdant)
+# Rebuild an ISO virtual machine image (then brand it as Verdant).
+# Rebuilds the container image first, then builds the ISO from the GHCR
+# reference (see _iso-bib) so installed systems update from the registry.
 [group('Build Virtal Machine Image')]
-rebuild-iso $target_image=("localhost/" + image_name) $tag=default_tag: (_rebuild-bib target_image tag "iso" "disk_config/iso.toml") && brand-iso
+rebuild-iso $target_image=("localhost/" + image_name) $tag=default_tag:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    just build "${target_image}" "${tag}"
+    just _iso-bib "${target_image}" "${tag}"
+
+# Tag the local image under its GHCR reference in the rootful store, then run
+# bootc-image-builder against the GHCR reference. The installer records that
+# reference in the ostree origin, which is where `bootc upgrade` on
+# ISO-installed systems pulls from -- without this, fresh installs try to
+# pull updates from localhost and fail.
+_iso-bib $target_image $tag: (_rootful_load_image target_image tag)
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    just sudoif podman tag "${target_image}:${tag}" "ghcr.io/${repo_organization}/${image_name}:${tag}"
+    just _build-bib "ghcr.io/${repo_organization}/${image_name}" "${tag}" "iso" "disk_config/iso.toml"
+    just brand-iso
 
 # Brand the BIB installer ISO as Verdant: volume label + boot menu titles, and
 # /IMAGES/PRODUCT.IMG (Anaconda welcome-screen product name + Verdant
