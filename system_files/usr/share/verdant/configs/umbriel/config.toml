@@ -149,6 +149,7 @@ duration_ms = 250
 # headless service and toggles in-process).
 "Mod+K"     = "spawn noctalia msg plugin mortalglitch/keymap:service all toggle"
 "Mod+L"     = "spawn noctalia msg session lock"
+"Mod+Tab"   = "overview-toggle"
 
 # --- window basics ----------------------------------------------------------
 "Mod+Q" = "window-close"
