@@ -98,6 +98,28 @@ build $target_image=image_name $tag=default_tag:
 
     set -euox pipefail
 
+    # --- pinned base image (written by 'just pin-deps') -------------------
+    # The build is only reproducible if the base is frozen by digest, so a
+    # build without a pin fails loudly instead of silently tracking the live
+    # silverblue-main:44 tag.
+    if [[ ! -f pins.toml ]]; then
+      echo "ERROR: pins.toml not found. Run 'just pin-deps' to create the pin." >&2
+      exit 1
+    fi
+    BASE_DIGEST="$(python3 -c 'import tomllib;print(tomllib.load(open("pins.toml","rb"))["base"]["digest"])' 2>/dev/null || true)"
+    if [[ -z "$BASE_DIGEST" ]]; then
+      echo "ERROR: pins.toml has no base.digest. Run 'just pin-deps' to create the pin." >&2
+      exit 1
+    fi
+    # A fresh clone without 'git lfs pull' has LFS *pointer* files in
+    # vendored_rpms/, not RPMs. Fail loudly instead of baking a broken image.
+    if grep -rlq "git-lfs.github.com/spec/v1" vendored_rpms/ 2>/dev/null; then
+      echo "ERROR: vendored_rpms/ contains git-lfs pointer files. Run 'git lfs pull' first." >&2
+      exit 1
+    fi
+    BASE_IMAGE="ghcr.io/ublue-os/silverblue-main@${BASE_DIGEST}"
+    echo ">> pinned base: ${BASE_IMAGE}"
+
     BUILD_ARGS=()
     LABELS=()
     if [[ -z "$(git status -s)" ]]; then
@@ -122,9 +144,128 @@ build $target_image=image_name $tag=default_tag:
     LABELS+=("--label" "org.opencontainers.image.vendor={{ repo_organization }}")
 
     # This actually builds the image!
-    PODMAN_BUILD_ARGS=("${BUILD_ARGS[@]}" "${LABELS[@]}" --pull=newer --tag "${target_image}:${tag}" --file Containerfile)
+    PODMAN_BUILD_ARGS=("${BUILD_ARGS[@]}" "${LABELS[@]}" --build-arg BASE_IMAGE="${BASE_IMAGE}" --pull=newer --tag "${target_image}:${tag}" --file Containerfile)
 
     podman build "${PODMAN_BUILD_ARGS[@]}" .
+
+# Pin the Terra layer: download the current Terra closure into vendored_rpms/
+# and record it in pins.toml (+ pins.sha256). This is the ONLY recipe that
+# talks to the live Terra repo — everything else builds from the pin.
+#
+# Run it to adopt a new Umbriel/Noctalia nightly, then `just build && just
+# validate-config` before committing the pin.
+#
+# The download set is computed INSIDE a container based on the pinned base
+# image, so "what dnf downloads" == "what build.sh needs" exactly: the closure
+# of the Terra packages minus everything the base already provides. The set is
+# the Umbriel/Noctalia/greeter stack plus ghostty — a Terra-only convenience
+# package build.sh installs that has no Fedora equivalent, so it must be pinned
+# too or the build can't install it with the live Terra repo disabled.
+#
+# Usage:
+#   just pin-deps         # pin against the base digest already in pins.toml
+#                         # (first run: uses the live silverblue-main:44 tag)
+#   just pin-deps latest  # re-pin the base from the live tag (adopt a new base)
+#
+# Requires: podman (rootless) + python3. To COMMIT the pin you also need
+# git-lfs (one-time: `sudo dnf install git-lfs && git lfs install`).
+pin-deps *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    MODE="${1:-pinned}"
+    BASE_TAG="ghcr.io/ublue-os/silverblue-main:44"   # keep in sync with Containerfile ARG
+    if [[ "$MODE" == "latest" ]]; then
+      BASE_IMAGE="$BASE_TAG"
+      echo ">> re-pinning base from live tag: $BASE_IMAGE"
+    elif [[ -f pins.toml ]] && [[ -n "$(python3 -c 'import tomllib;print(tomllib.load(open("pins.toml","rb"))["base"]["digest"])' 2>/dev/null || true)" ]]; then
+      PINNED_DIGEST="$(python3 -c 'import tomllib;print(tomllib.load(open("pins.toml","rb"))["base"]["digest"])')"
+      BASE_IMAGE="ghcr.io/ublue-os/silverblue-main@${PINNED_DIGEST}"
+      echo ">> pinning against pinned base: $BASE_IMAGE"
+    else
+      BASE_IMAGE="$BASE_TAG"
+      echo ">> first-time pin: using live tag $BASE_IMAGE"
+    fi
+    podman pull "$BASE_IMAGE"
+    BASE_DIGEST="$(podman image inspect "$BASE_IMAGE" --format json | python3 -c 'import sys,json;print(json.load(sys.stdin)[0]["Digest"])')"
+    echo ">> base digest: $BASE_DIGEST"
+    OUT="$(mktemp -d)"
+    trap 'rm -rf "$OUT"' EXIT
+    podman run --rm --entrypoint bash \
+      -v "$OUT":/out:z \
+      -v "$PWD/build_files/pin-terra.repo":/etc/yum.repos.d/verdant-pin-terra.repo:ro,z \
+      "$BASE_IMAGE" \
+      -c 'set -euo pipefail
+          ARCH=$(uname -m)
+          dnf5 clean all >/dev/null 2>&1 || true
+          dnf5 -y download --resolve --arch="$ARCH" --destdir=/out umbriel-nightly noctalia noctalia-greeter greetd ghostty
+         '
+    # collect into the repo (wipe stale pins first)
+    mkdir -p vendored_rpms
+    find vendored_rpms -name '*.rpm' -delete
+    mv "$OUT"/*.rpm vendored_rpms/
+    # --- generate pins.toml + pins.sha256 ---
+    PINS="pins.toml"; SHAFILE="pins.sha256"
+    declare -a FILES NAMES VERSIONS RELEASES ARCHES SHAS
+    for f in $(ls vendored_rpms/*.rpm 2>/dev/null | sort); do
+      b="$(basename "$f")"
+      read -r n v r a < <(rpm -qp --qf '%{NAME} %{VERSION} %{RELEASE} %{ARCH}\n' "$f")
+      FILES+=("$b"); NAMES+=("$n"); VERSIONS+=("$v"); RELEASES+=("$r"); ARCHES+=("$a")
+      SHAS+=("$(sha256sum "$f" | cut -d' ' -f1)")
+    done
+    [[ ${#FILES[@]} -gt 0 ]] || { echo "ERROR: no RPMs downloaded into vendored_rpms/" >&2; exit 1; }
+    : > "$SHAFILE"
+    {
+      echo "# Verdant dependency pin — generated by \`just pin-deps\`. Do not edit by hand."
+      echo "# The diff of this file between pins is the Terra changelog."
+      echo ""
+      echo "[base]"
+      echo 'image = "ghcr.io/ublue-os/silverblue-main"'
+      echo "digest = \"${BASE_DIGEST}\""
+      echo "pinned_at = \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\""
+      echo ""
+      echo "# Top-level (Terra) packages — the moving targets pinning exists for."
+      echo "[top_level]"
+    } > "$PINS"
+    for i in "${!FILES[@]}"; do
+      case "${NAMES[$i]}" in
+        umbriel-nightly|noctalia|noctalia-greeter|greetd|ghostty)
+          echo "${NAMES[$i]} = \"${VERSIONS[$i]}-${RELEASES[$i]}\"" >> "$PINS"
+          ;;
+      esac
+    done
+    echo "" >> "$PINS"
+    for i in "${!FILES[@]}"; do
+      echo "${SHAS[$i]}  ${FILES[$i]}" >> "$SHAFILE"
+      {
+        echo "[[packages]]"
+        echo "file = \"${FILES[$i]}\""
+        echo "name = \"${NAMES[$i]}\""
+        echo "version = \"${VERSIONS[$i]}\""
+        echo "release = \"${RELEASES[$i]}\""
+        echo "arch = \"${ARCHES[$i]}\""
+        echo "sha256 = \"${SHAS[$i]}\""
+        echo ""
+      } >> "$PINS"
+    done
+    echo ">> pinned ${#FILES[@]} packages into vendored_rpms/ + pins.toml + pins.sha256"
+    echo ">> base: $BASE_DIGEST"
+    echo ">> NEXT: just build && just validate-config, then commit pins.toml + vendored_rpms/"
+
+# Cut a release: build a stable, digest-addressable image from the current pin
+# and git-tag it. The release is reproducible because it points at a commit
+# that carries pins.toml + vendored_rpms/ (LFS) + the base digest.
+#
+# Usage: just release 1.0.0
+release *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    VERSION="${1:-}"
+    [[ -n "$VERSION" ]] || { echo "usage: just release <version>" >&2; exit 1; }
+    [[ -f pins.toml ]] || { echo "no pins.toml — run 'just pin-deps' first" >&2; exit 1; }
+    just build "{{ image_name }}" "${VERSION}"
+    git tag -a "verdant-${VERSION}" -m "Verdant ${VERSION} — pinned base + Terra layer"
+    echo ">> built {{ image_name }}:${VERSION} and tagged verdant-${VERSION}"
+    echo ">> push: git push origin ${VERSION} verdant-${VERSION}"
 
 # Split the image for smaller updates (New)!
 rechunk $target_image=image_name $tag=default_tag:

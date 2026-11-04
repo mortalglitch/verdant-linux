@@ -1,0 +1,13 @@
+[terra]
+name=Terra $releasever (pinned download)
+metalink=https://tetsudou.fyralabs.com/metalink?repo=terra$releasever&arch=$basearch
+metadata_expire=6h
+type=rpm
+gpgcheck=0
+enabled=1
+enabled_metadata=1
+# NOTE: used ONLY by `just pin-deps`, which mounts this into a disposable
+# container to download the current Terra closure. The build-time repo
+# (system_files/etc/yum.repos.d/terra.repo) stays enabled=0 — builds install
+# from vendored_rpms/, never from this live repo. Integrity of the downloaded
+# files is guaranteed by the sha256 pin (pins.sha256), not GPG.

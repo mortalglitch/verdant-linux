@@ -8,8 +8,11 @@ set -euo pipefail
 cp -avf "/ctx/system_files"/. /
 
 ### Packages (Fedora + RPMfusion; LumineCapture from COPR — see below)
+# ghostty is NOT here — it's Terra-only and ships from the pinned vendored
+# set (see the Umbriel/Noctalia/pinned block below), so it can't be installed
+# from the live repos once terra.repo is disabled in the image.
 dnf5 -y install \
-  ghostty btop just \
+  btop just \
   gedit \
   nvim gcc make \
   grim tesseract wl-clipboard libnotify \
@@ -24,8 +27,18 @@ dnf5 -y install \
 # Enabling it makes the clock sync itself the moment a network is up.
 systemctl enable systemd-timesyncd.service
 
-### Umbriel + Noctalia (Terra repo, baked in via system_files/etc/yum.repos.d/terra.repo)
-dnf5 -y install umbriel-nightly noctalia
+### Umbriel + Noctalia + greeter stack (PINNED — vendored RPMs from `just pin-deps`)
+# Installed from the local pinned set ONLY; the live Terra repo is never
+# consulted, so the Terra layer is exactly what pins.toml says it is. The
+# sha256 gate below fails the build if any vendored file doesn't match.
+# We install the RPMs by file path (not a repo): dnf5 resolves their
+# dependency graph against the already-installed base, so every non-Terra
+# dependency must already be satisfied by the base image (it is — pin-deps
+# computed the download set inside a container based on this same pinned
+# base). This one command installs the whole vendored closure (umbriel,
+# noctalia, the greeter, and their not-in-base dependencies).
+( cd /ctx/vendored_rpms && sha256sum --check --strict ../pins.sha256 )
+dnf5 -y install --disablerepo='*' /ctx/vendored_rpms/*.rpm
 
 ### Umbriel system config — /etc/xdg/umbriel (documented system lookup layer)
 # Canonical config tree: /usr/share/verdant/configs/ (VERSION = managed-set
@@ -66,8 +79,9 @@ cp -f /usr/share/verdant/configs/noctalia/plugins/keymap/* \
       /etc/skel/.local/share/noctalia/plugins/keymap/
 
 ### Noctalia Greeter (greetd) — replace GDM as the login screen
-# greetd from Fedora, noctalia-greeter from Terra (baked in via system_files)
-dnf5 -y install greetd noctalia-greeter
+# greetd (Fedora, not in the silverblue base) + noctalia-greeter (Terra) were
+# both installed from the pinned set above (same vendored closure); this block
+# only wires greetd up to the Noctalia greeter session.
 
 # Point greetd at the Noctalia greeter session wrapper (NOT the noctalia-greeter binary)
 mkdir -p /etc/greetd

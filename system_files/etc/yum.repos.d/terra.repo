@@ -15,8 +15,12 @@ type=rpm
 gpgcheck=0
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-terra$releasever
 repo_gpgcheck=0
-enabled=1
-enabled_metadata=1
+# DISABLED at build time: the Terra layer ships pinned via vendored_rpms/
+# (see pins.toml). The live nightly repo is a moving target and re-enabling it
+# would let an installed system drift from the pinned ostree commit. Re-enable
+# only to user-layer a Terra package that isn't in the pin.
+enabled=0
+enabled_metadata=0
 countme=1
 
 [terra-source]
