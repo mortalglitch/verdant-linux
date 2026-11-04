@@ -1,5 +1,12 @@
+# Some ideas in this file are derived from Aurora (https://getaurora.dev) —
+# a delightful KDE desktop experience for end-users looking for reliability
+# and developers looking for the most hassle-free setup. Thanks, Aurora!
 set dotenv-filename := "image-template.env"
 set dotenv-load
+
+# Path to the `just` executable, for recursive `just` invocations (used by
+# `generate-point` from `generate-build-tags`)
+just := just_executable()
 
 export image_name := env_var("IMAGE_NAME")
 export repo_organization := env_var("REPO_ORGANIZATION")
@@ -17,7 +24,7 @@ alias run-vm := run-vm-qcow2
 default:
     @just --list
 
-# Check Just Syntax
+# Verify all Justfile syntax (Justfile + *.just fragments)
 [group('Just')]
 check:
     #!/usr/bin/env bash
@@ -28,7 +35,7 @@ check:
     echo "Checking syntax: Justfile"
     just --unstable --fmt --check -f Justfile
 
-# Fix Just Syntax
+# Reformat all Justfile syntax (Justfile + *.just fragments)
 [group('Just')]
 fix:
     #!/usr/bin/env bash
@@ -39,7 +46,7 @@ fix:
     echo "Checking syntax: Justfile"
     just --unstable --fmt -f Justfile || { exit 1; }
 
-# Clean Repo
+# Remove build artifacts (output/, manifests, changelogs).
 [group('Utility')]
 clean:
     #!/usr/bin/env bash
@@ -57,7 +64,7 @@ clean:
 sudo-clean:
     just sudoif just clean
 
-# sudoif bash function
+# Run a command as root, escalating via sudo only when needed.
 [group('Utility')]
 [private]
 sudoif command *args:
@@ -75,24 +82,18 @@ sudoif command *args:
     }
     sudoif {{ command }} {{ args }}
 
-# This Justfile recipe builds a container image using Podman.
+# Build the Verdant container image with podman.
 #
 # Arguments:
-#   $target_image - The tag you want to apply to the image (default: $image_name).
-#   $tag - The tag for the image (default: $default_tag).
+#   $target_image - image name to tag the build as (default: $image_name).
+#   $tag - tag to apply (default: $default_tag).
 #
-# The script constructs the version string using the tag and the current date.
-# If the git working directory is clean, it also includes the short SHA of the current HEAD.
+# With a clean git tree the image is also labeled with the HEAD commit —
+# short SHA in org.opencontainers.image.version, full SHA in
+# org.opencontainers.image.revision — so release changelogs can attribute
+# commits to the exact build.
 #
-# just build $target_image $tag
-#
-# Example usage:
-#   just build myimage mytag
-#
-# This will build an image 'myimage:mytag'
-#
-
-# Build the image using the specified parameters
+# Usage: just build [image] [tag]
 build $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
 
@@ -129,10 +130,12 @@ build $target_image=image_name $tag=default_tag:
         LABELS+=("--label" "org.opencontainers.image.source=https://github.com/{{ repo_organization }}/{{ image_name }}/blob/${GIT_SHA}/Containerfile")
         LABELS+=("--label" "org.opencontainers.image.url=https://github.com/{{ repo_organization }}/{{ image_name }}/tree/${GIT_SHA}")
         LABELS+=("--label" "org.opencontainers.image.version={{ default_tag }}.$(date +%Y%m%d)-${GIT_SHA}")
+        # Full commit hash for changelog/commit attribution (see .github/changelogs.py)
+        LABELS+=("--label" "org.opencontainers.image.revision=$(git rev-parse HEAD)")
     fi
 
-    # Image metadata for https://artifacthub.io/ - This is optional but is highly recommended so we all can get a index of all the custom images
-    # The metadata by itself is not going to do anything, you choose if you want your image to be on ArtifactHub or not.
+    # ArtifactHub (https://artifacthub.io) metadata — optional, but it gets
+    # the image indexed there. Adjust these labels if you want that.
     LABELS+=("--label" "io.artifacthub.package.deprecated=false")
     LABELS+=("--label" "io.artifacthub.package.keywords={{ image_keywords }}")
     LABELS+=("--label" "io.artifacthub.package.license=Apache-2.0")
@@ -143,7 +146,7 @@ build $target_image=image_name $tag=default_tag:
     LABELS+=("--label" "org.opencontainers.image.title={{ image_name }}")
     LABELS+=("--label" "org.opencontainers.image.vendor={{ repo_organization }}")
 
-    # This actually builds the image!
+    # Run the build.
     PODMAN_BUILD_ARGS=("${BUILD_ARGS[@]}" "${LABELS[@]}" --build-arg BASE_IMAGE="${BASE_IMAGE}" --pull=newer --tag "${target_image}:${tag}" --file Containerfile)
 
     podman build "${PODMAN_BUILD_ARGS[@]}" .
@@ -267,20 +270,19 @@ release *args:
     echo ">> built {{ image_name }}:${VERSION} and tagged verdant-${VERSION}"
     echo ">> push: git push origin ${VERSION} verdant-${VERSION}"
 
-# Split the image for smaller updates (New)!
+# Rechunk the image with chunkah for smaller incremental updates.
 rechunk $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
 
     set -xeuo pipefail
 
-    # TODO: pin chunkah image to hash once mature enough
-    # You may run into space issues on github runners as we are making a
-    # complete copy of the image, which likely has no shared layers, unless your
-    # base image is also using chunkah
+    # TODO: pin the chunkah image to a digest once it stabilizes.
+    # Rechunking copies the whole image, so it needs roughly double the disk
+    # space — on tight runners this can fail if /tmp is small.
     CHUNKAH_CONFIG_FILE="$(mktemp)"
 
-    # You may omit the current directory here if you are confident that you
-    # won't run out of space on /tmp for your image
+    # Output goes under ./ (not /tmp) so it survives on runners with small
+    # /tmp; drop the "./" if you know /tmp has room.
     CHUNKAH_OUTPUT_DIR="$(mktemp -d ./"${target_image}"_chunkah_XXXXXX)"
 
     trap 'rm -f "${CHUNKAH_CONFIG_FILE}"; rm -rf "${CHUNKAH_OUTPUT_DIR}"' EXIT
@@ -303,7 +305,7 @@ rechunk $target_image=image_name $tag=default_tag:
     CHUNKED_IMAGE="$(podman pull "oci:${CHUNKAH_OUTPUT_DIR}/chunked")"
     podman tag "${CHUNKED_IMAGE}" "${target_image}:${tag}"
 
-# Split the image for smaller updates (Classical)!
+# Rechunk the image with rpm-ostree for smaller incremental updates.
 ostree-rechunk $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
 
@@ -327,7 +329,7 @@ ostree-rechunk $target_image=image_name $tag=default_tag:
       --rootfs /rpm-ostree \
       --output "containers-storage:[overlay@/run/host-container-storage+/run/rpm-ostree-storage]localhost/${target_image}:${tag}"
 
-# Generate Default Tag
+# Print the default tag.
 [group('Utility')]
 generate-default-tag $tag=default_tag:
     #!/usr/bin/env bash
@@ -335,7 +337,33 @@ generate-default-tag $tag=default_tag:
 
     echo "${tag}"
 
-# Generate Tags
+# Get the index point for multiple daily images (private helper)
+# Queries the registry for existing <tag>-YYYYMMDD.N tags and returns the next
+# index so same-day rebuilds get .2, .3, ... (consumed by `generate-build-tags`;
+# the release changelog in .github/changelogs.py diffs the two newest of these).
+[private]
+generate-point $tag=default_tag:
+    #!/usr/bin/env bash
+    set -eoux pipefail
+
+    TIMESTAMP="$(date +%Y%m%d)"
+    tags="/tmp/{{ image_name }}-tags.json"
+
+    if [[ ! -f ${tags} ]]; then
+      skopeo list-tags docker://ghcr.io/{{ repo_organization }}/{{ image_name }} > "${tags}"
+    fi
+
+    if [[ $(jq --arg tag "${tag}" --arg timestamp "${TIMESTAMP}" 'any(.Tags[]; contains($tag + "-" + $timestamp))' < "${tags}") == "true" ]]; then
+      POINT=$(jq -r --arg tag "${tag}" --arg timestamp "${TIMESTAMP}" \
+        '($tag + "-" + $timestamp) as $base | [ .Tags[] | select(startswith($base + ".")) ] | sort_by(split(".")[-1] | tonumber) | .[-1] | if . == null then "1" else split(".")[-1] end' < "${tags}")
+      ((POINT++))
+    else
+      POINT=1
+    fi
+
+    echo "${POINT}"
+
+# Generate all tags for this build.
 [group('Utility')]
 generate-build-tags $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
@@ -353,28 +381,116 @@ generate-build-tags $target_image=image_name $tag=default_tag:
     BUILD_TAGS+=("${DATE}")
     BUILD_TAGS+=("${tag}")
     BUILD_TAGS+=("${tag}-${DATE}")
+    # Date-indexed tag (<tag>-YYYYMMDD.N) for release changelogs
+    POINT=$({{ just }} generate-point "${tag}")
+    BUILD_TAGS+=("${tag}-${DATE}.${POINT}")
 
     echo "${BUILD_TAGS[@]}"
 
-# Tag Images
+# Apply the generated tags to the built image.
 [group('Utility')]
 tag-images $target_image=image_name $tag=default_tag tags="":
     #!/usr/bin/env bash
     set -eoux pipefail
 
-    # Get Image, and untag
+    # Resolve the image ID and clear its existing tags.
     IMAGE=$(podman inspect ${target_image}:${tag} | jq -r .[].Id)
     podman untag ${IMAGE}
 
-    # Tag Image
+    # Apply the new tags.
     for tag in {{ tags }}; do
         podman tag $IMAGE "${target_image}:${tag}"
     done
 
-    # Show Images
+    # Show the result.
     podman images
 
-# Image Name
+# Generate a GitHub release changelog by diffing the SBOMs of the two newest
+# date-indexed tags (<tag>-YYYYMMDD.N) of the default stream (see
+# .github/changelogs.py). Writes ./changelog.md and ./output.env (TITLE=/TAG=).
+#
+# Requires: skopeo, oras, zstd, python3, and a git checkout with history.
+# The SBOM must already be attached to the pushed image (see `attach-sbom`).
+#
+# just changelogs "optional handwritten notes"
+[group('Utility')]
+changelogs $handwritten="":
+    #!/usr/bin/env bash
+    set -eou pipefail
+    python3 ./.github/changelogs.py "{{ default_tag }}" ./output.env ./changelog.md --workdir . --handwritten "${handwritten}"
+
+# Extract the built image and generate an SPDX JSON SBOM with syft.
+# Run after build (and rechunk) so the SBOM matches the pushed image.
+#
+# just gen-sbom [image] [tag] [syft_cmd]
+[group('Utility')]
+gen-sbom $target_image=image_name $tag=default_tag $syft_cmd="syft":
+    #!/usr/bin/env bash
+    set -eoux pipefail
+
+    OUT_DIR="sbom_out/${target_image}"
+    mkdir -p "${OUT_DIR}"
+
+    # Scan an exported rootfs instead of the image itself: scanning the image
+    # directly OOMs on GitHub runners (anchore/syft#3800).
+    podman container create --replace --name ${target_image} "localhost/${target_image}:${tag}"
+
+    ROOTFS="${OUT_DIR}/rootfs"
+    mkdir -p "${ROOTFS}"
+
+    podman export ${target_image} | tar -C "${ROOTFS}" -xf -
+    podman container rm ${target_image}
+
+    SBOM="${OUT_DIR}/sbom.json"
+
+    ${syft_cmd} --source-name "${target_image}:${tag}" "${OUT_DIR}" -o syft-json=${SBOM}
+    du -sh "${SBOM}"
+
+    rm -rf "${ROOTFS}"
+
+# Attach the generated SBOM to the pushed image as an OCI artifact referrer.
+# Run after push; the changelog generator reads it back with `oras discover`.
+# Writes the SBOM digest to /tmp/sbom-digestfile.
+#
+# just attach-sbom [image] [tag] --registry ghcr.io/org --digest sha256:...
+[arg("digest", long="digest")]
+[arg("registry", long="registry")]
+[group('Utility')]
+attach-sbom $target_image=image_name $tag=default_tag $registry="" $digest="":
+    #!/usr/bin/env bash
+    set -eoux pipefail
+
+    if [[ -z "${digest}" || -z "${registry}" ]]; then
+        echo "usage: just attach-sbom --registry <registry> --digest <sha256:...>" >&2
+        exit 1
+    fi
+
+    OUT_DIR="sbom_out/${target_image}"
+    SBOM="sbom.json"
+    if [[ ! -f "${OUT_DIR}/${SBOM}" ]]; then
+        echo "ERROR: ${OUT_DIR}/${SBOM} not found. Run 'just gen-sbom' first." >&2
+        exit 1
+    fi
+    IMAGE="${registry}/${target_image}@${digest}"
+
+    # oras records paths relative to cwd, so run from the SBOM's directory to
+    # keep the artifact flat.
+    pushd "${OUT_DIR}"
+
+    oras attach \
+      --artifact-type application/vnd.spdx+json \
+      --annotation filename="${SBOM}" \
+      "${IMAGE}" \
+      "${SBOM}"
+
+    popd
+
+    SBOM_DIGEST="$(oras discover --format json "${IMAGE}" | jq -r '.referrers[] | select(.artifactType == "application/vnd.spdx+json") | .digest')"
+
+    echo "${SBOM_DIGEST}" > /tmp/sbom-digestfile
+    echo "Attached SBOM ${SBOM_DIGEST} to ${IMAGE}"
+
+# Echo the image name (helper for recipe defaults).
 [group('Utility')]
 [private]
 image_name $target_image=image_name:
@@ -383,23 +499,14 @@ image_name $target_image=image_name:
 
     echo "${image_name}"
 
-# Command: _rootful_load_image
-# Description: This script checks if the current user is root or running under sudo. If not, it attempts to resolve the image tag using podman inspect.
-#              If the image is found, it loads it into rootful podman. If the image is not found, it pulls it from the repository.
+# Make the built image available in the rootful podman store, which is what
+# bootc-image-builder (run via sudo) sees.
 #
-# Parameters:
-#   $target_image - The name of the target image to be loaded or pulled.
-#   $tag - The tag of the target image to be loaded or pulled. Default is 'default_tag'.
-#
-# Example usage:
-#   _rootful_load_image my_image latest
-#
-# Steps:
-# 1. Check if the script is already running as root or under sudo.
-# 2. Check if target image is in the non-root podman container storage)
-# 3. If the image is found, load it into rootful podman using podman scp.
-# 4. If the image is not found, pull it from the remote repository into reootful podman.
-
+# - Already root or under sudo: nothing to do.
+# - Image in both stores with the same ID: nothing to do.
+# - Image in the user store (possibly newer): copy it down via `podman image scp`.
+# - Not in the user store: pull it from the registry.
+[private]
 _rootful_load_image $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
     set -eoux pipefail
@@ -441,15 +548,13 @@ _rootful_load_image $target_image=image_name $tag=default_tag:
         just sudoif podman pull "${target_image}:${tag}"
     fi
 
-# Build a bootc bootable image using Bootc Image Builder (BIB)
-# Converts a container image to a bootable image
-# Parameters:
-#   target_image: The name of the image to build (ex. localhost/fedora)
-#   tag: The tag of the image to build (ex. latest)
-#   type: The type of image to build (ex. qcow2, raw, iso)
-#   config: The configuration file to use for the build (default: disk_config/disk.toml)
-
-# Example: just _rebuild-bib localhost/fedora latest qcow2 disk_config/disk.toml
+# Build a bootable disk with bootc-image-builder from a container image.
+#
+# Arguments:
+#   $target_image - image to convert (e.g. localhost/verdant-linux)
+#   $tag - image tag
+#   $type - output format: qcow2, raw, or iso
+# $config - disk config (default: disk_config/disk.toml)
 _build-bib $target_image $tag $type $config: (_rootful_load_image target_image tag)
     #!/usr/bin/env bash
     set -euo pipefail
@@ -479,29 +584,23 @@ _build-bib $target_image $tag $type $config: (_rootful_load_image target_image t
     sudo rmdir "${BUILDTMP}"
     sudo chown -R "${USER}:${USER}" output/
 
-# Podman builds the image from the Containerfile and creates a bootable image
-# Parameters:
-#   target_image: The name of the image to build (ex. localhost/fedora)
-#   tag: The tag of the image to build (ex. latest)
-#   type: The type of image to build (ex. qcow2, raw, iso)
-#   config: The configuration file to use for the build (deafult: disk_config/disk.toml)
-
-# Example: just _rebuild-bib localhost/fedora latest qcow2 disk_config/disk.toml
+# Rebuild the container image, then build a bootable disk from it
+# (same arguments as _build-bib).
 _rebuild-bib $target_image $tag $type $config: (build target_image tag) && (_build-bib target_image tag type config)
 
 # Build a QCOW2 virtual machine image
-[group('Build Virtal Machine Image')]
+[group('Build Virtual Machine Image')]
 build-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "qcow2" "disk_config/disk.toml")
 
 # Build a RAW virtual machine image
-[group('Build Virtal Machine Image')]
+[group('Build Virtual Machine Image')]
 build-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_build-bib target_image tag "raw" "disk_config/disk.toml")
 
 # Build an ISO virtual machine image (then brand it as Verdant).
 # The ISO is built from the GHCR reference (see _iso-bib) so installed
 # systems record ghcr.io/<org>/<image>:<tag> -- not localhost/... -- as the
 # update source for `bootc upgrade`.
-[group('Build Virtal Machine Image')]
+[group('Build Virtual Machine Image')]
 build-iso $target_image=("localhost/" + image_name) $tag=default_tag:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -509,17 +608,17 @@ build-iso $target_image=("localhost/" + image_name) $tag=default_tag:
     just _iso-bib "${target_image}" "${tag}"
 
 # Rebuild a QCOW2 virtual machine image
-[group('Build Virtal Machine Image')]
+[group('Build Virtual Machine Image')]
 rebuild-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "qcow2" "disk_config/disk.toml")
 
 # Rebuild a RAW virtual machine image
-[group('Build Virtal Machine Image')]
+[group('Build Virtual Machine Image')]
 rebuild-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_rebuild-bib target_image tag "raw" "disk_config/disk.toml")
 
 # Rebuild an ISO virtual machine image (then brand it as Verdant).
 # Rebuilds the container image first, then builds the ISO from the GHCR
 # reference (see _iso-bib) so installed systems update from the registry.
-[group('Build Virtal Machine Image')]
+[group('Build Virtual Machine Image')]
 rebuild-iso $target_image=("localhost/" + image_name) $tag=default_tag:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -592,19 +691,19 @@ _run-vm $target_image $tag $type $config:
     podman run "${run_args[@]}"
 
 # Run a virtual machine from a QCOW2 image
-[group('Run Virtal Machine')]
+[group('Run Virtual Machine')]
 run-vm-qcow2 $target_image=("localhost/" + image_name) $tag=default_tag: && (_run-vm target_image tag "qcow2" "disk_config/disk.toml")
 
 # Run a virtual machine from a RAW image
-[group('Run Virtal Machine')]
+[group('Run Virtual Machine')]
 run-vm-raw $target_image=("localhost/" + image_name) $tag=default_tag: && (_run-vm target_image tag "raw" "disk_config/disk.toml")
 
 # Run a virtual machine from an ISO
-[group('Run Virtal Machine')]
+[group('Run Virtual Machine')]
 run-vm-iso $target_image=("localhost/" + image_name) $tag=default_tag: && (_run-vm target_image tag "iso" "disk_config/iso.toml")
 
 # Run a virtual machine using systemd-vmspawn
-[group('Run Virtal Machine')]
+[group('Run Virtual Machine')]
 spawn-vm rebuild="0" type="qcow2" ram="6G":
     #!/usr/bin/env bash
 
