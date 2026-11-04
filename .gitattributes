@@ -1,6 +1,6 @@
 # Vendored Terra RPMs are binary blobs — store them via git-lfs so the repo
 # stays cloneable. `just build` fails loudly if these are unfetched LFS
 # pointers (run `git lfs pull` first). One-time setup: `sudo dnf install
-# git-lfs && git lfs install`. GitHub Actions' actions/checkout fetches LFS
-# automatically, so CI needs no change.
+# git-lfs && git lfs install`. CI: actions/checkout does NOT fetch LFS — the
+# build workflow has an explicit `git lfs pull` step after checkout.
 vendored_rpms/*.rpm filter=lfs diff=lfs merge=lfs -text
