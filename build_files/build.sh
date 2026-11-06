@@ -185,17 +185,21 @@ sed -i 's/^DefaultZone=.*/DefaultZone=verdant/' /etc/firewalld/firewalld.conf
 # we also enable the update/upgrade timers for automatic Homebrew maintenance.)
 systemctl enable brew-setup.service brew-update.timer brew-upgrade.timer
 
-### Remove the GNOME login session (minimal: shell, session, gdm)
+### Remove the GNOME login session (minimal: shell, session, gdm) + app store
 # Keep nautilus (file manager) + gedit (editor) + the GNOME *libraries*
 # (gnome-keyring, gnome-desktop3/4, gnome-menus) that Noctalia/GTK still need.
 # dnf also auto-drops the now-orphaned gnome-initial-setup (the first-boot
 # "welcome center") and gnome-browser-connector. The `systemctl disable gdm`
 # above already ran while gdm was present; removing the package is the clean cut.
+# gnome-software (the "Software" app store) goes too: nothing in the image
+# requires it (verified: 1-package removal, 12 MiB freed), and flatpak app
+# management stays covered by the Bazaar + Warehouse flatpaks below.
 dnf5 -y remove \
   gnome-shell gnome-shell-common \
   gnome-shell-extension-apps-menu gnome-shell-extension-background-logo gnome-shell-extension-common gnome-shell-extension-launch-new-instance gnome-shell-extension-places-menu gnome-shell-extension-window-list \
   gnome-session gnome-session-wayland-session gnome-classic-session \
-  gdm
+  gdm \
+  gnome-software
 
 ### Preinstall LazyVim plugins into the skel (headless sync; lazy-lock.json pins versions)
 export HOME=/etc/skel
