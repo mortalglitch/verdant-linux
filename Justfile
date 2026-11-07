@@ -511,8 +511,19 @@ _rootful_load_image $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
     set -eoux pipefail
 
+    # Self-heal: a previously FAILED run leaves a root-owned ~12G /tmp/podman*
+    # staging file in the /tmp tmpfs; the NEXT run then dies with "disk quota
+    # exceeded" (tmpfs reports EDQUOT when full). Clear leftovers before any
+    # staging, only while no rootful podman is running (the persistent
+    # user-pod service is ignored on purpose).
+    if [[ "${UID}" -eq 0 ]]; then
+        bash -c 'if ! pgrep -x -u 0 podman; then rm -f /tmp/podman*; fi'
+    else
+        sudo bash -c 'if ! pgrep -x -u 0 podman; then rm -f /tmp/podman*; fi'
+    fi
+
     # Check if already running as root or under sudo
-    if [[ -n "${SUDO_USER:-}" || "${UID}" -eq "0" ]]; then
+    if [[ -n "${SUDO_USER:-}" || "${UID}" -eq 0 ]]; then
         echo "Already root or running under sudo, no need to load image from user podman."
         exit 0
     fi
@@ -538,9 +549,16 @@ _rootful_load_image $target_image=image_name $tag=default_tag:
         # If the image is found, load it into rootful podman
         ID=$(just sudoif podman images --filter reference="${target_image}:${tag}" --format "'{{ '{{.ID}}' }}'")
         if [[ "$ID" != "$USER_IMG_ID" ]]; then
-            # If the image ID is not found or different from user, copy the image from user podman to root podman
+            # If the image ID is not found or different from user, copy the
+            # image from user podman to root podman. The rootful client stages
+            # the full image (~12G) in its TMPDIR; a bare `TMPDIR=x` prefix on
+            # the sudo line never reaches it, and the /tmp tmpfs is often too
+            # small (50% of RAM on live systems) -> "disk quota exceeded".
+            # Stage in an on-disk dir by exporting TMPDIR inside the rootful
+            # shell (COPYTMP lives in the repo dir, so the repo must be on a
+            # real disk).
             COPYTMP=$(mktemp -p "${PWD}" -d -t _build_podman_scp.XXXXXXXXXX)
-            just sudoif TMPDIR='${COPYTMP}' podman image scp ${UID}@localhost::"${target_image}:${tag}" root@localhost::"${target_image}:${tag}"
+            sudo bash -c "export TMPDIR='${COPYTMP}'; exec podman image scp ${UID}@localhost::\"${target_image}:${tag}\" root@localhost::\"${target_image}:${tag}\""
             rm -rf "${COPYTMP}"
         fi
     else
