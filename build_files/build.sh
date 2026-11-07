@@ -23,13 +23,20 @@ cp -avf "/ctx/system_files"/. /
 # ghostty is NOT here — it's Terra-only and ships from the pinned vendored
 # set (see the Umbriel/Noctalia/pinned block below), so it can't be installed
 # from the live repos once terra.repo is disabled in the image.
+# genisoimage (isoinfo) + xorriso are the ISO branding tooling: `just build-iso`
+# ends by running build_files/brand-iso.sh, which rewrites the volume label,
+# grub.cfgs, and ESP partition of the BIB ISO. A fresh Verdant install lacks
+# them (first build on a new machine died in brand-iso with "could not read
+# volume label"), so they're baked in to make `just build-iso` work out of the
+# box on any Verdant machine. (mtools + ImageMagick are already in the base.)
 dnf5 -y install \
   btop just \
   gedit \
   nvim gcc make \
   grim slurp tesseract wl-clipboard libnotify \
   git-lfs \
-  fastfetch
+  fastfetch \
+  genisoimage xorriso
 
 ### git-lfs — LFS filters system-wide (Verdant's own build process)
 # The Verdant repo stores its pinned vendored_rpms/*.rpm via git-lfs
