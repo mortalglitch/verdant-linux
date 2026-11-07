@@ -5,6 +5,18 @@ set -euo pipefail
 #    Terra repo + GPG key) — also includes the merged ghcr.io/ublue-os/brew files
 #    from the Containerfile ctx stage (etc/profile.d/brew.sh,
 #    usr/share/homebrew.tar.zst, brew-setup.service + update/upgrade timers)
+# /usr/local is a broken symlink to ../var/usrlocal in the base (Fedora's
+# opt/usrlocal layout, owned by the `filesystem` package). The /var/usrlocal
+# subvolume is created at install time, so the symlink target is absent in the
+# build container. system_files ships a real usr/local/bin tree (ocr-region),
+# so replace the broken symlink with a real directory first — otherwise cp -avf
+# aborts with "cannot overwrite non-directory". This matches the newer
+# rpm-ostree model of committing content directly under /usr/local (see the
+# rpm-ostree-0-integration-opt-usrlocal tmpfiles dropin comment).
+if [ -L /usr/local ] && [ ! -e /usr/local ]; then
+  rm -f /usr/local
+  mkdir -p /usr/local
+fi
 cp -avf "/ctx/system_files"/. /
 
 ### Packages (Fedora + RPMfusion; LumineCapture from COPR — see below)
