@@ -228,9 +228,12 @@ duration_ms = 250
 # capture + annotate (magnifier, numbered arrows, OCR, redact, pin to screen).
 # wlr-screencopy backend — same protocol as grim, no portal needed.
 # Bare Print stays on the Noctalia fullscreen widget; Super+Ctrl+Print = ocr-region.
+# ocr-region ships system-wide at /usr/local/bin (not in the user home):
+# spawning a PATH binary matches every other bind here and keeps working for
+# homes that predate the skel copy or never got one.
 "Print"        = "spawn noctalia msg screenshot-fullscreen pick"
 "Mod+Print"    = "spawn lumine-capture"
-"Mod+Ctrl+Print" = "spawn ~/.local/bin/ocr-region"
+"Mod+Ctrl+Print" = "spawn ocr-region"
 
 # [GAP] Mod+LMB drag / Mod+RMB resize (your mouse:272 / mouse:273) — Umbriel has
 #       no explicit drag/resize action; floating windows are usually draggable
