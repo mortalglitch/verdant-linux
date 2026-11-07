@@ -1,9 +1,15 @@
 #!/bin/bash
 # ocr-region: select a screen region and OCR it to the clipboard.
-# grim -s (interactive selection + capture) -> tesseract -> wl-copy.
+# slurp (region selection) + grim -g (capture that region) -> tesseract -> wl-copy.
+# NOT `grim -s`: its built-in selection path returns a zero-size frame on
+# Umbriel (no drag UI appears, "failed to write png"). Umbriel's own docs
+# use the `grim -g "$(slurp)"` pattern instead.
 # Extra languages: export OCR_LANGS="eng+deu" (needs tesseract-langpack-*).
 
-TEXT=$(grim -s - | tesseract stdin stdout --oem 1 --psm 6 -l "${OCR_LANGS:-eng}" --dpi 300 -c preserve_interword_spaces=1 2>/dev/null) || exit 1
+GEOM=$(slurp) || exit 0   # user cancelled the selection
+[ -n "$GEOM" ] || exit 0
+
+TEXT=$(grim -g "$GEOM" - | tesseract stdin stdout --oem 1 --psm 6 -l "${OCR_LANGS:-eng}" --dpi 300 -c preserve_interword_spaces=1 2>/dev/null) || exit 1
 
 [[ -z $TEXT ]] && exit 1
 

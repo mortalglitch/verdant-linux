@@ -27,7 +27,7 @@ dnf5 -y install \
   btop just \
   gedit \
   nvim gcc make \
-  grim tesseract wl-clipboard libnotify \
+  grim slurp tesseract wl-clipboard libnotify \
   git-lfs \
   fastfetch
 
