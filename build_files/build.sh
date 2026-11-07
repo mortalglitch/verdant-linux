@@ -16,7 +16,18 @@ dnf5 -y install \
   gedit \
   nvim gcc make \
   grim tesseract wl-clipboard libnotify \
+  git-lfs \
   fastfetch
+
+### git-lfs — LFS filters system-wide (Verdant's own build process)
+# The Verdant repo stores its pinned vendored_rpms/*.rpm via git-lfs
+# (.gitattributes), and `just build` fails loudly if those are unfetched LFS
+# pointers. Baking the binary + `git lfs install --system` (writes the smudge/
+# clean filters into /etc/gitconfig, which the /etc subvolume carries to the
+# installed system) makes every user able to `git clone` + `git lfs pull` +
+# `just build` out of the box — no per-user `sudo dnf install git-lfs &&
+# git lfs install` step.
+git lfs install --system
 
 ### NTP — enable systemd-timesyncd (the uBlue base ships it UNENABLED)
 # The timesyncd binary is in the base (merged into systemd-udev in Fedora 44 —
