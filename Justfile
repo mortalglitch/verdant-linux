@@ -3,6 +3,9 @@
 # and developers looking for the most hassle-free setup. Thanks, Aurora!
 set dotenv-filename := "image-template.env"
 set dotenv-load
+# Pass recipe arguments as shell positional parameters ($1, $2, ...) —
+# required by `pin-deps latest` and `release <version>`, which read $1.
+set positional-arguments
 
 # Path to the `just` executable, for recursive `just` invocations (used by
 # `generate-point` from `generate-build-tags`)
@@ -102,7 +105,7 @@ build $target_image=image_name $tag=default_tag:
     # --- pinned base image (written by 'just pin-deps') -------------------
     # The build is only reproducible if the base is frozen by digest, so a
     # build without a pin fails loudly instead of silently tracking the live
-    # silverblue-main:44 tag.
+    # silverblue-main:45 tag.
     if [[ ! -f pins.toml ]]; then
       echo "ERROR: pins.toml not found. Run 'just pin-deps' to create the pin." >&2
       exit 1
@@ -167,7 +170,7 @@ build $target_image=image_name $tag=default_tag:
 #
 # Usage:
 #   just pin-deps         # pin against the base digest already in pins.toml
-#                         # (first run: uses the live silverblue-main:44 tag)
+#                         # (first run: uses the live silverblue-main:45 tag)
 #   just pin-deps latest  # re-pin the base from the live tag (adopt a new base)
 #
 # Requires: podman (rootless) + python3. To COMMIT the pin you also need
@@ -176,7 +179,7 @@ pin-deps *args:
     #!/usr/bin/env bash
     set -euo pipefail
     MODE="${1:-pinned}"
-    BASE_TAG="ghcr.io/ublue-os/silverblue-main:44"   # keep in sync with Containerfile ARG
+    BASE_TAG="ghcr.io/ublue-os/silverblue-main:45"   # keep in sync with Containerfile ARG
     if [[ "$MODE" == "latest" ]]; then
       BASE_IMAGE="$BASE_TAG"
       echo ">> re-pinning base from live tag: $BASE_IMAGE"
@@ -200,7 +203,7 @@ pin-deps *args:
       -c 'set -euo pipefail
           ARCH=$(uname -m)
           dnf5 clean all >/dev/null 2>&1 || true
-          dnf5 -y download --resolve --arch="$ARCH" --destdir=/out umbriel-nightly noctalia noctalia-greeter greetd ghostty
+          dnf5 -y download --resolve --arch="$ARCH" --destdir=/out umbriel-nightly noctalia-nightly noctalia-greeter greetd ghostty
          '
     # collect into the repo (wipe stale pins first)
     mkdir -p vendored_rpms
@@ -231,7 +234,7 @@ pin-deps *args:
     } > "$PINS"
     for i in "${!FILES[@]}"; do
       case "${NAMES[$i]}" in
-        umbriel-nightly|noctalia|noctalia-greeter|greetd|ghostty)
+        umbriel-nightly|noctalia-nightly|noctalia-greeter|greetd|ghostty)
           echo "${NAMES[$i]} = \"${VERSIONS[$i]}-${RELEASES[$i]}\"" >> "$PINS"
           ;;
       esac
@@ -664,7 +667,7 @@ _iso-bib $target_image $tag: (_rootful_load_image target_image tag)
 brand-iso:
     #!/usr/bin/env bash
     set -euo pipefail
-    just sudoif bash build_files/brand-iso.sh output/bootiso/install.iso 44
+    just sudoif bash build_files/brand-iso.sh output/bootiso/install.iso 45
 
 # Run a virtual machine with the specified image type and configuration
 _run-vm $target_image $tag $type $config:
