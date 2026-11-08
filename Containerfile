@@ -4,7 +4,7 @@
 # tag is only a fallback so this file parses standalone; a real build always
 # overrides it with the pinned digest. Declared GLOBALLY (before any FROM) so it
 # is visible to the main FROM below — a stage-scoped ARG cannot feed a FROM.
-ARG BASE_IMAGE=ghcr.io/ublue-os/silverblue-main:44
+ARG BASE_IMAGE=ghcr.io/ublue-os/silverblue-main:45
 
 # Homebrew: official uBlue image (Bluefin pattern) — merged into the ctx stage
 FROM ghcr.io/ublue-os/brew:latest AS brew
