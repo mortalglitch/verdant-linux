@@ -19,6 +19,22 @@ if [ -L /usr/local ] && [ ! -e /usr/local ]; then
 fi
 cp -avf "/ctx/system_files"/. /
 
+### F45 base repos -> /etc/yum.repos.d/ (for bib's DNF4 manifest depsolve)
+# Fedora 45 moved the base repo definitions OUT of /etc/yum.repos.d/ and into
+# /usr/share/dnf5/repos.d/ (a DNF5-only location; /etc/yum.repos.d/ is now an
+# empty dir provided by the fedora-repos package). DNF5 reads both dirs, but
+# DNF4 — what bootc-image-builder's osbuild-depsolve-dnf uses for the manifest
+# depsolve — reads only /etc/yum.repos.d/. With no base repo there, the depsolve
+# fails with "No match for argument" on every base package (glibc, systemd, ...).
+# Copy the official DNF5 base repo files into /etc/yum.repos.d/ so the manifest
+# depsolve can resolve the base packages. DNF5 dedupes the now-duplicate repo IDs
+# across the two dirs (verified: `dnf5 repo list` still shows one fedora/updates,
+# and `dnf5 repoquery glibc systemd` still resolves), so the image's own dnf5 is
+# unaffected. (gpgcheck stays 1; a depsolve only reads metadata — repo_gpgcheck=0
+# — so package-signature GPG never fires during manifest generation.)
+install -d /etc/yum.repos.d
+cp -n /usr/share/dnf5/repos.d/*.repo /etc/yum.repos.d/ 2>/dev/null || true
+
 ### Packages (Fedora + RPMfusion; LumineCapture from COPR — see below)
 # ghostty is NOT here — it's Terra-only and ships from the pinned vendored
 # set (see the Umbriel/Noctalia/pinned block below), so it can't be installed
