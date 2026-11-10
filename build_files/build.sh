@@ -166,10 +166,19 @@ systemctl enable greetd
 # title (grub-mkconfig_lib) and the default hostname (systemd's
 # DEFAULT_HOSTNAME) actually come from. Patching only /etc/os-release is why
 # the laptop showed "Fedora" in GRUB and @fedora in the prompt.
+# The bootc import path that creates the deployed ostree commit (ostree-ext
+# ImageImporter::import) writes NO `version` commit metadata — only the
+# container-image-manifest/config keys. Ostree's BLS title formula is
+# PRETTY_NAME + version + "(ostree:N)", with version appended only when the
+# commit carries it, so menu entries show a bare "Verdant (ostree:0)". There is
+# no osbuild `os_version` equivalent on this path, so the build date goes into
+# PRETTY_NAME instead — the title formula skips version when it is already
+# contained in PRETTY_NAME, so this renders "Verdant 2026.11.10 (ostree:0)".
+BUILD_DATE="$(date +%Y.%m.%d)"
 for osrel in /etc/os-release /usr/lib/os-release; do
   sed -i -E \
     -e 's/^NAME=.*/NAME="Verdant"/' \
-    -e 's/^PRETTY_NAME=.*/PRETTY_NAME="Verdant"/' \
+    -e "s/^PRETTY_NAME=.*/PRETTY_NAME=\"Verdant ${BUILD_DATE}\"/" \
     -e 's/^DEFAULT_HOSTNAME=.*/DEFAULT_HOSTNAME=verdant/' \
     "$osrel"
 done
