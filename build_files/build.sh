@@ -54,6 +54,17 @@ dnf5 -y install \
   fastfetch \
   genisoimage xorriso
 
+### Tailscale — official stable repo (uBlue pattern: Aurora ships the same repo)
+# Fedora's tailscale RPM lags, so install from pkgs.tailscale.com. The repo
+# file is baked in via system_files/usr/share/dnf5/repos.d/tailscale.repo
+# with enabled=0 (Aurora's pattern): bib's DNF4 manifest depsolve (build-iso)
+# cannot import GPG keys non-interactively, so a repo_gpgcheck=1 repo left
+# enabled by default would break the manifest step — dnf5 here enables it
+# explicitly instead. The daemon is enabled at boot — the package ships
+# tailscaled.service unenabled.
+dnf5 -y --enablerepo=tailscale-stable install tailscale
+systemctl enable tailscaled.service
+
 ### git-lfs — LFS filters system-wide (Verdant's own build process)
 # The Verdant repo stores its pinned vendored_rpms/*.rpm via git-lfs
 # (.gitattributes), and `just build` fails loudly if those are unfetched LFS

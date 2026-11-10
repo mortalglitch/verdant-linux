@@ -1,0 +1,18 @@
+# Tailscale official stable repo (https://pkgs.tailscale.com/stable/fedora/).
+# Fedora's own tailscale RPM lags, so uBlue images (Aurora et al.) ship the
+# official repo. Kept enabled=0 (Aurora's pattern):
+#   - the container build enables it explicitly via dnf5 --enablerepo, where
+#     GPG key import works fine (verified with Fedora 45's dnf5);
+#   - bib's DNF4 manifest depsolve for `just build-iso` cannot import GPG
+#     keys non-interactively, so a repo_gpgcheck=1 repo left enabled by
+#     default would break the manifest step. Disabled, it is skipped
+#     entirely.
+[tailscale-stable]
+name=Tailscale stable
+baseurl=https://pkgs.tailscale.com/stable/fedora/$basearch
+enabled=0
+type=rpm
+repo_gpgcheck=1
+gpgcheck=1
+gpgkey=https://pkgs.tailscale.com/stable/fedora/repo.gpg
+includepkgs=tailscale
