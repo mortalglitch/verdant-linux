@@ -2,5 +2,26 @@
   "logo": {
     "type": "kitty",
     "source": "/usr/share/verdant/fastfetch/verdant.png"
-  }
+  },
+  // Explicit module list is required: fastfetch (2.68.x) treats a config
+  // without a "modules" key as an EMPTY module list instead of falling back
+  // to the defaults, so a logo-only config renders just the logo.
+  "modules": [
+    "os",
+    "host",
+    "kernel",
+    "uptime",
+    "packages",
+    "shell",
+    "terminal",
+    "display",
+    "theme",
+    "colors",
+    "cpu",
+    "gpu",
+    "memory",
+    "disk",
+    "battery",
+    "datetime"
+  ]
 }
