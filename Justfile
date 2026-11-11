@@ -97,7 +97,11 @@ sudoif command *args:
 # commits to the exact build.
 #
 # Usage: just build [image] [tag]
-build $target_image=image_name $tag=default_tag:
+# (private) Shared container-image build for both variants. $3 is the
+# Containerfile (Containerfile or Containerfile.nvidia); $4 is extra build args
+# (empty for the standard variant, the pinned NVIDIA akmods image for the
+# -nvidia variant).
+_build-image $target_image $tag $containerfile $extra_build_args:
     #!/usr/bin/env bash
 
     set -euox pipefail
@@ -144,15 +148,40 @@ build $target_image=image_name $tag=default_tag:
     LABELS+=("--label" "io.artifacthub.package.license=Apache-2.0")
     LABELS+=("--label" "io.artifacthub.package.logo-url={{ image_logo_url }}")
     LABELS+=("--label" "io.artifacthub.package.prerelease=false")
-    LABELS+=("--label" "org.opencontainers.image.created=$(date -u +%Y\-%m\-%d\T%H\:%M\:%S\Z)")
+    LABELS+=("--label" "org.opencontainers.image.created=$(date -u +%Y\-%m\-%dT%H\:%M\:%S\Z)")
     LABELS+=("--label" "org.opencontainers.image.description={{ image_desc }}")
     LABELS+=("--label" "org.opencontainers.image.title={{ image_name }}")
     LABELS+=("--label" "org.opencontainers.image.vendor={{ repo_organization }}")
 
-    # Run the build.
-    PODMAN_BUILD_ARGS=("${BUILD_ARGS[@]}" "${LABELS[@]}" --build-arg BASE_IMAGE="${BASE_IMAGE}" --pull=newer --tag "${target_image}:${tag}" --file Containerfile)
+    # Run the build. $extra_build_args is intentionally unquoted: it is either
+    # empty (standard variant) or "--build-arg NVIDIA_AKMODS_IMAGE=..." (nvidia).
+    # shellcheck disable=SC2086
+    PODMAN_BUILD_ARGS=("${BUILD_ARGS[@]}" "${LABELS[@]}" --build-arg BASE_IMAGE="${BASE_IMAGE}" ${extra_build_args} --pull=newer --tag "${target_image}:${tag}" --file "${containerfile}")
 
     podman build "${PODMAN_BUILD_ARGS[@]}" .
+
+# Build the standard Verdant:45 container image (no NVIDIA driver).
+build $target_image=image_name $tag=default_tag:
+    just _build-image "${target_image}" "${tag}" "Containerfile" ""
+
+# Build the Verdant:45-nvidia container image (NVIDIA Open driver + kmod).
+# The akmods image is pinned by digest in pins.toml [nvidia] (written by
+# 'just pin-deps'); Containerfile.nvidia bind-mounts its /rpms so build.sh can
+# install the driver. The image is tagged <tag>-nvidia (e.g. 45-nvidia).
+build-nvidia $target_image=image_name $tag=default_tag:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ ! -f pins.toml ]]; then
+      echo "ERROR: pins.toml not found. Run 'just pin-deps' to create the pin." >&2
+      exit 1
+    fi
+    NV_AKMODS="$(python3 -c 'import tomllib;print(tomllib.load(open("pins.toml","rb"))["nvidia"]["image"])' 2>/dev/null || true)"
+    if [[ -z "$NV_AKMODS" ]]; then
+      echo "ERROR: pins.toml has no nvidia.image. Run 'just pin-deps' to create the pin." >&2
+      exit 1
+    fi
+    echo ">> pinned nvidia akmods: ${NV_AKMODS}"
+    just _build-image "${target_image}" "${tag}-nvidia" "Containerfile.nvidia" "--build-arg NVIDIA_AKMODS_IMAGE=${NV_AKMODS}"
 
 # Pin the Terra layer: download the current Terra closure into vendored_rpms/
 # and record it in pins.toml (+ pins.sha256). This is the ONLY recipe that
@@ -240,6 +269,30 @@ pin-deps *args:
       esac
     done
     echo "" >> "$PINS"
+    # --- pin the nvidia akmods image (kernel-pinned to the base) ---
+    # The akmods kmod is built per-kernel, so the akmods image tag embeds the
+    # base's exact kernel release (main-<fedora>-<kernel>). Find it, pin by
+    # digest, and record it so `just build-nvidia` is reproducible.
+    KERNEL="$(podman run --rm --entrypoint /usr/bin/bash "$BASE_IMAGE" -c 'rpm -q --qf "%{VERSION}-%{RELEASE}.%{ARCH}" kernel-core' 2>/dev/null | head -1)"
+    if [[ -z "$KERNEL" ]]; then
+      echo "ERROR: could not determine base kernel; cannot pin nvidia akmods" >&2
+      exit 1
+    fi
+    FEDORA_RELEASE="${BASE_TAG##*:}"
+    AKMODS_TAG="main-${FEDORA_RELEASE}-${KERNEL}"
+    AKMODS_REF="ghcr.io/ublue-os/akmods-nvidia-open:${AKMODS_TAG}"
+    echo ">> pinning nvidia akmods: $AKMODS_REF"
+    podman pull "$AKMODS_REF"
+    AKMODS_DIGEST="$(podman image inspect "$AKMODS_REF" --format json | python3 -c 'import sys,json;print(json.load(sys.stdin)[0]["Digest"])')"
+    {
+      echo "[nvidia]"
+      echo "image = \"ghcr.io/ublue-os/akmods-nvidia-open@${AKMODS_DIGEST}\""
+      echo "tag = \"${AKMODS_TAG}\""
+      echo "kernel = \"${KERNEL}\""
+      echo "digest = \"${AKMODS_DIGEST}\""
+      echo "pinned_at = \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\""
+      echo ""
+    } >> "$PINS"
     for i in "${!FILES[@]}"; do
       echo "${SHAS[$i]}  ${FILES[$i]}" >> "$SHAFILE"
       {
@@ -255,6 +308,7 @@ pin-deps *args:
     done
     echo ">> pinned ${#FILES[@]} packages into vendored_rpms/ + pins.toml + pins.sha256"
     echo ">> base: $BASE_DIGEST"
+    echo ">> nvidia akmods: ${AKMODS_TAG} (${AKMODS_DIGEST})"
     echo ">> NEXT: just build && just validate-config, then commit pins.toml + vendored_rpms/"
 
 # Cut a release: build a stable, digest-addressable image from the current pin
@@ -417,10 +471,12 @@ tag-images $target_image=image_name $tag=default_tag tags="":
 #
 # just changelogs "optional handwritten notes"
 [group('Utility')]
-changelogs $handwritten="":
+changelogs $handwritten="" $tag=default_tag:
     #!/usr/bin/env bash
     set -eou pipefail
-    python3 ./.github/changelogs.py "{{ default_tag }}" ./output.env ./changelog.md --workdir . --handwritten "${handwritten}"
+    # $tag lets CI generate a changelog for a specific stream (e.g. 45-nvidia);
+    # it defaults to default_tag so `just changelogs "notes"` keeps working.
+    python3 ./.github/changelogs.py "${tag}" ./output.env ./changelog.md --workdir . --handwritten "${handwritten}"
 
 # Extract the built image and generate an SPDX JSON SBOM with syft.
 # Run after build (and rechunk) so the SBOM matches the pushed image.
@@ -646,6 +702,25 @@ rebuild-iso $target_image=("localhost/" + image_name) $tag=default_tag:
 
     just build "${target_image}" "${tag}"
     just _iso-bib "${target_image}" "${tag}"
+
+# Build an ISO from the existing Verdant:45-nvidia image (then brand it).
+# Mirrors build-iso but for the -nvidia variant (tag <tag>-nvidia).
+[group('Build Virtual Machine Image')]
+build-iso-nvidia $target_image=("localhost/" + image_name) $tag=default_tag:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    just _iso-bib "${target_image}" "${tag}-nvidia"
+
+# Rebuild the Verdant:45-nvidia image, then build an ISO from it.
+# Mirrors rebuild-iso but for the -nvidia variant.
+[group('Build Virtual Machine Image')]
+rebuild-iso-nvidia $target_image=("localhost/" + image_name) $tag=default_tag:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    just build-nvidia "${target_image}" "${tag}"
+    just _iso-bib "${target_image}" "${tag}-nvidia"
 
 # Tag the local image under its GHCR reference in the rootful store, then run
 # bootc-image-builder against the GHCR reference. The installer records that

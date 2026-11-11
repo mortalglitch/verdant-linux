@@ -303,4 +303,54 @@ dnf5 -y install lumine-capture
 # Leave the COPR disabled in the image (re-enable: dnf5 config-manager --set-enabled copr:copr.fedorainfracloud.org:netflate:lumine-capture)
 sed -i 's/^enabled=1/enabled=0/' /etc/yum.repos.d/lumine-capture.copr.repo
 
+### ── NVIDIA Open driver (Verdant:45-nvidia variant only) ─────────────────────
+# Runs only when the Containerfile bind-mounted the akmods image's /rpms into
+# /tmp/akmods-rpms (Containerfile.nvidia). The standard Verdant:45 build never
+# creates that directory, so this whole block is a no-op there — one build.sh
+# serves both variants.
+#
+# Flow (per the uBlue image-template README "Adding NVIDIA drivers"):
+#   1. nvidia-install.sh — installs the nvidia-open driver, the kernel-pinned
+#      kmod, and the addons (CDI/persistenced/supergfxctl), sets up multilib +
+#      SELinux, and patches the dracut config. Needs network (pulls a few
+#      packages). IMAGE_NAME=silverblue opts in to supergfxctl (GPU switching).
+#   2. dracut --force    — rebuild the initramfs so the nvidia module is present
+#      on the next boot (the README's one extra step).
+#   3. nouveau ICD + libnvidia-ml symlink + kargs — NVIDIA-on-Wayland setup that
+#      nvidia-install.sh does not do (blacklist nouveau, enable nvidia modeset).
+if [[ -d /tmp/akmods-rpms ]]; then
+  echo ">> installing NVIDIA Open driver + kernel module (from akmods)..."
+  # Installs the nvidia-open driver, the kernel-pinned kmod, and the addons
+  # (CDI/persistenced/supergfxctl), sets up multilib + SELinux, and patches the
+  # dracut config. IMAGE_NAME=silverblue opts in to supergfxctl (GPU switching).
+  # Needs network (pulls a few packages). AKMODNV_PATH defaults to /tmp/akmods-rpms.
+  IMAGE_NAME=silverblue /tmp/akmods-rpms/ublue-os/nvidia-install.sh
+
+  # Rebuild the initramfs so the nvidia module is present on the next boot —
+  # the README's one extra step. --no-hostonly so it works on any hardware (not
+  # just the build container), --add ostree for the bootc/ostree boot path,
+  # --reproducible + DRACUT_NO_XATTR=1 for stable, diffable builds.
+  KERNEL_VERSION="$(rpm -q --queryformat='%{VERSION}-%{RELEASE}.%{ARCH}' kernel-core)"
+  export DRACUT_NO_XATTR=1
+  dracut --no-hostonly --kver "$KERNEL_VERSION" --reproducible --add ostree \
+      -f "/usr/lib/modules/$KERNEL_VERSION/initramfs.img"
+  chmod 0600 "/usr/lib/modules/$KERNEL_VERSION/initramfs.img"
+
+  # Drop the nouveau Vulkan ICD so the nvidia ICD is the one picked, and link
+  # libnvidia-ml for CUDA toolkits (standard uBlue post-install).
+  rm -f /usr/share/vulkan/icd.d/nouveau_icd.*.json
+  ln -sf libnvidia-ml.so.1 /usr/lib64/libnvidia-ml.so
+
+  # NVIDIA-on-Wayland kernel args: blacklist nouveau, enable nvidia DRM modeset,
+  # and stop the simpledrm platform driver from grabbing the GPU. Applied via
+  # the bootc kargs drop-in so `bootc upgrade` keeps them.
+  mkdir -p /usr/lib/bootc/kargs.d
+  cat > /usr/lib/bootc/kargs.d/00-nvidia.toml <<'EOF'
+kargs = ["rd.driver.blacklist=nouveau", "modprobe.blacklist=nouveau", "nvidia-drm.modeset=1", "initcall_blacklist=simpledrm_platform_driver_init"]
+EOF
+
+  echo ">> NVIDIA driver + kmod + initramfs + kargs installed."
+fi
+
+# Final cache clean (runs for both variants; also clears the nvidia dnf cache).
 dnf5 clean all

@@ -22,14 +22,29 @@ on:
 env:
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}"  # do not edit
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-${{ inputs.brand_name}}-${{ inputs.stream_name }}
-  cancel-in-progress: true
-
 jobs:
   build_push:
-    name: Build and push image
+    name: Build and push ${{ matrix.variant }}
     runs-on: ubuntu-26.04
+    # Build the standard and nvidia variants as independent matrix entries so
+    # each gets its own date-indexed tag series (45-* vs 45-nvidia-*), SBOM,
+    # signature, and pushed tags. fail-fast is off so one variant failing
+    # still lets the other finish.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: standard
+            build_recipe: build
+            tag_suffix: ""
+          - variant: nvidia
+            build_recipe: build-nvidia
+            tag_suffix: "-nvidia"
+    # Per-variant concurrency: two builds of the same variant don't overlap,
+    # but standard and nvidia can build in parallel.
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-${{ matrix.variant }}
+      cancel-in-progress: true
 
     permissions:
       contents: read
@@ -80,12 +95,16 @@ jobs:
           # Lowercase the image uri https://github.com/macbre/push-to-ghcr/issues/12
           echo "IMAGE_REGISTRY=${IMAGE_REGISTRY,,}" >> ${GITHUB_ENV}
           echo "IMAGE_NAME=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
+          # The tag this variant is pushed under. `build-nvidia` tags the image
+          # <tag>-nvidia, so every downstream step for the nvidia variant keys
+          # off <tag>-nvidia, not <tag>.
+          echo "PUSH_TAG=${DEFAULT_TAG}${{ matrix.tag_suffix }}" >> ${GITHUB_ENV}
 
       # This actually builds the container image
       - name: Build Image
         id: build-image
         run: |
-          just build \
+          just ${{ matrix.build_recipe }} \
             ${IMAGE_NAME} \
             ${DEFAULT_TAG}
 
@@ -95,7 +114,7 @@ jobs:
         run: |
           just ostree-rechunk \
             ${IMAGE_NAME} \
-            ${DEFAULT_TAG}
+            ${PUSH_TAG}
 
       # If you are feeling adventurous, use the new distro agnostic rechunker
       # https://github.com/coreos/chunkah
@@ -122,7 +141,7 @@ jobs:
         run: |
           alias_tags="$(just generate-build-tags \
                         ${IMAGE_NAME} \
-                        ${DEFAULT_TAG})"
+                        ${PUSH_TAG})"
 
           echo "Tags for this Action..."
           echo "${alias_tags}"
@@ -135,7 +154,7 @@ jobs:
         run: |
           just tag-images \
             "${IMAGE_NAME}" \
-            "${DEFAULT_TAG}" \
+            "${PUSH_TAG}" \
             "${ALIAS_TAGS}"
 
       # Generate an SPDX SBOM of the final (rechunked) image so it can be
@@ -154,7 +173,7 @@ jobs:
           set -euox pipefail
           just gen-sbom \
             ${IMAGE_NAME} \
-            ${DEFAULT_TAG} \
+            ${PUSH_TAG} \
             "${SYFT_CMD}"
 
       # These `if` statements are so that pull requests for your custom images do not make it publish any packages under your name without you knowing
@@ -230,7 +249,7 @@ jobs:
           set -euox pipefail
           just attach-sbom \
             ${IMAGE_NAME} \
-            ${DEFAULT_TAG} \
+            ${PUSH_TAG} \
             --registry "${IMAGE_REGISTRY}" \
             --digest "${DIGEST}"
           sbom_digest=$(< /tmp/sbom-digestfile)
@@ -249,12 +268,21 @@ jobs:
 
   # After a published build, diff the SBOMs of the two newest date-indexed
   # tags (<tag>-YYYYMMDD.N) and open a GitHub Release with the changes
-  # (see .github/changelogs.py)
+  # (see .github/changelogs.py). Matrixed per variant so each stream gets its
+  # own release (45-* and 45-nvidia-*).
   generate-release:
-    name: Generate release
+    name: Generate release (${{ matrix.variant }})
     runs-on: ubuntu-26.04
     needs: [build_push]
     if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: standard
+            tag_suffix: ""
+          - variant: nvidia
+            tag_suffix: "-nvidia"
     permissions:
       contents: write
     steps:
@@ -283,13 +311,22 @@ jobs:
             sudo apt-get install -y -qq "${missing[@]}"
           fi
 
+      - name: Default Tag
+        run: |
+          DEFAULT_TAG=$(just generate-default-tag)
+          echo "DEFAULT_TAG=${DEFAULT_TAG}" >> $GITHUB_ENV
+
+      - name: Prepare environment
+        run: |
+          echo "PUSH_TAG=${DEFAULT_TAG}${{ matrix.tag_suffix }}" >> ${GITHUB_ENV}
+
       - name: Generate release text
         id: generate-release-text
         env:
           HANDWRITTEN: ${{ inputs.handwritten }}
         run: |
           set -euox pipefail
-          just changelogs "${HANDWRITTEN}"
+          just changelogs "${HANDWRITTEN}" "${PUSH_TAG}"
           source ./output.env
           echo "title=${TITLE}" >> $GITHUB_OUTPUT
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
@@ -301,8 +338,9 @@ jobs:
           TAG: ${{ steps.generate-release-text.outputs.tag }}
         run: |
           set -euox pipefail
+          # No --latest: with two variants (standard + nvidia) only one release
+          # could be "latest", so let GitHub auto-pick the most recent instead.
           gh release create \
             "${TAG}" \
             --title "${TITLE}" \
-            -F ./changelog.md \
-            --latest
+            -F ./changelog.md

@@ -1,0 +1,48 @@
+# Base image, pinned by digest. `just build-nvidia` reads the digest from
+# pins.toml (written by `just pin-deps`) and passes it as --build-arg BASE_IMAGE,
+# freezing the Fedora base. The plain tag is only a fallback so this file parses
+# standalone; a real build always overrides it with the pinned digest. Declared
+# GLOBALLY (before any FROM) so it is visible to the FROMs below.
+ARG BASE_IMAGE=ghcr.io/ublue-os/silverblue-main:45
+
+# NVIDIA akmods image, pinned by digest. `just build-nvidia` reads the digest
+# from pins.toml [nvidia] and passes it as --build-arg NVIDIA_AKMODS_IMAGE. This
+# image is kernel-pinned to the base (the kmod is built against the base's exact
+# kernel), so pin-deps derives its tag from the base kernel. The plain tag is
+# only a fallback so this file parses standalone.
+ARG NVIDIA_AKMODS_IMAGE=ghcr.io/ublue-os/akmods-nvidia-open:main-45-7.2.15-300.fc45.x86_64
+
+# Homebrew: official uBlue image (Bluefin pattern) — merged into the ctx stage
+FROM ghcr.io/ublue-os/brew:latest AS brew
+
+# Allow build scripts to be referenced without being copied into the final image
+FROM scratch AS ctx
+COPY build_files /
+COPY system_files /system_files
+COPY vendored_rpms /vendored_rpms
+COPY pins.toml /pins.toml
+COPY pins.sha256 /pins.sha256
+COPY --from=brew /system_files /system_files
+
+# NVIDIA akmods: provides /rpms (the nvidia-open driver RPMs, the kernel-pinned
+# kmod, and nvidia-install.sh). Used only to bind-mount /rpms into the build
+# step below — nothing is installed FROM this stage directly.
+FROM ${NVIDIA_AKMODS_IMAGE} AS nvidia-akmods
+
+# Base Image — pinned by digest (see the global ARG BASE_IMAGE at the top)
+FROM ${BASE_IMAGE}
+
+### MODIFICATIONS
+## make modifications desired in your image and install packages by modifying the build.sh script
+## the following RUN directive does all the things required to run "build.sh" as recommended.
+##
+## The extra --mount bind-mounts the akmods image's /rpms into /tmp/akmods-rpms
+## (on the /tmp tmpfs). build.sh detects that directory and installs the NVIDIA
+## Open driver + kmod from it (see the NVIDIA block at the end of build.sh).
+## The /tmp tmpfs is ephemeral, so the mounted RPMs do not leak into the image.
+
+RUN --mount=type=bind,from=ctx,source=/,target=/ctx     --mount=type=cache,dst=/var/cache     --mount=type=cache,dst=/var/log     --mount=type=tmpfs,dst=/tmp     --mount=type=bind,from=nvidia-akmods,source=/rpms,target=/tmp/akmods-rpms     /ctx/build.sh
+
+### LINTING
+## Verify final image and contents are correct.
+RUN bootc container lint
