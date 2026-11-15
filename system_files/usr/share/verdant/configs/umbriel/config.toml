@@ -38,7 +38,7 @@ preserve_split = true
 layout = "us"                #  kb_layout = us
 
 [input.focus]
-follows_mouse = true         #  follow_mouse = 1
+follows_mouse = "sloppy"         #  follow_mouse = 1
 
 [input.touchpad]
 natural_scroll = true        #  touchpad.natural_scroll

@@ -4,22 +4,22 @@
 [base]
 image = "ghcr.io/ublue-os/silverblue-main"
 digest = "sha256:7d599814825e7494d0cd6906e7f65f75545540ae2c25068c27cf8556fa2cedca"
-pinned_at = "2026-11-11T16:41:02Z"
+pinned_at = "2026-11-15T13:33:24Z"
 
 # Top-level (Terra) packages — the moving targets pinning exists for.
 [top_level]
 ghostty = "1.3.1-3.fc45"
 greetd = "0.10.3-12.fc45"
 noctalia-greeter = "1.7.0-2.fc45"
-noctalia-nightly = "5.4.1^20261111git.ae0dc73-1.fc45"
-umbriel-nightly = "0^20261110git.d13b341-1.fc45"
+noctalia-nightly = "5.5.0^20261113git.12d96bd-1.fc45"
+umbriel-nightly = "0^20261114git.db2133c-1.fc45"
 
 [nvidia]
 image = "ghcr.io/ublue-os/akmods-nvidia-open@sha256:196903fc1188b56262e7b57c281b1ed930f4abb1ee8531f65a9bcc4b67121854"
 tag = "main-45-7.2.15-300.fc45.x86_64"
 kernel = "7.2.15-300.fc45.x86_64"
 digest = "sha256:196903fc1188b56262e7b57c281b1ed930f4abb1ee8531f65a9bcc4b67121854"
-pinned_at = "2026-11-11T16:41:03Z"
+pinned_at = "2026-11-15T13:33:25Z"
 
 [[packages]]
 file = "ddcutil-3.0.2-1.fc45.x86_64.rpm"
@@ -206,12 +206,12 @@ arch = "x86_64"
 sha256 = "6d6096a48b095900e5d71d814c3cc0a9850b0d126caa01b50980d1249d0ad497"
 
 [[packages]]
-file = "noctalia-nightly-0:5.4.1^20261111git.ae0dc73-1.fc45.x86_64.rpm"
+file = "noctalia-nightly-0:5.5.0^20261113git.12d96bd-1.fc45.x86_64.rpm"
 name = "noctalia-nightly"
-version = "5.4.1^20261111git.ae0dc73"
+version = "5.5.0^20261113git.12d96bd"
 release = "1.fc45"
 arch = "x86_64"
-sha256 = "d4b3ed7e9576da1f7db722bca9ec18288e5f43d3a4df281f2bda02e72be41aa3"
+sha256 = "f092b77c3218ed03f7759342ad45ad4a3997629e3fbb18764ceed51ea95c520a"
 
 [[packages]]
 file = "tomlplusplus-3.4.0-8.fc45.x86_64.rpm"
@@ -222,12 +222,12 @@ arch = "x86_64"
 sha256 = "f3ae3af984a168fc5eb2b0c6a12b6aab057bfc9bd40f5d280a99a50324d89d17"
 
 [[packages]]
-file = "umbriel-nightly-0:0^20261110git.d13b341-1.fc45.x86_64.rpm"
+file = "umbriel-nightly-0:0^20261114git.db2133c-1.fc45.x86_64.rpm"
 name = "umbriel-nightly"
-version = "0^20261110git.d13b341"
+version = "0^20261114git.db2133c"
 release = "1.fc45"
 arch = "x86_64"
-sha256 = "9fd432946329af150aae0aa6b16485d2eacb2286972c9ed0936b9b8a8da7886f"
+sha256 = "7d334c6aad1232081c1a84c9e1e950146effa5a814b2443485039774f90887d1"
 
 [[packages]]
 file = "wlroots-0.20.2-2.fc45.x86_64.rpm"
