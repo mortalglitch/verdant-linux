@@ -260,12 +260,16 @@ systemctl enable brew-setup.service brew-update.timer brew-upgrade.timer
 # gnome-software (the "Software" app store) goes too: nothing in the image
 # requires it (verified: 1-package removal, 12 MiB freed), and flatpak app
 # management stays covered by the Bazaar + Warehouse flatpaks below.
+# firefox goes too (firefox-langpacks rides along): Zen (the flatpak installed
+# below) is the default browser, so the 294 MiB RPM is dead weight — verified
+# in the pinned base: 2-package removal, 342 MiB freed, nothing else requires it.
 dnf5 -y remove \
   gnome-shell gnome-shell-common \
   gnome-shell-extension-apps-menu gnome-shell-extension-background-logo gnome-shell-extension-common gnome-shell-extension-launch-new-instance gnome-shell-extension-places-menu gnome-shell-extension-window-list \
   gnome-session gnome-session-wayland-session gnome-classic-session \
   gdm \
-  gnome-software
+  gnome-software \
+  firefox firefox-langpacks
 
 ### Preinstall LazyVim plugins into the skel (headless sync; lazy-lock.json pins versions)
 export HOME=/etc/skel
@@ -278,6 +282,7 @@ nvim --headless "+Lazy! sync" +qa
 # terminal it spawns into.
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak install -y --system flathub org.gnome.Loupe            # image viewer (crop/rotate/flip, EXIF/metadata)
+flatpak install -y --system flathub app.zen_browser.zen         # default browser (Firefox RPM removed above; /etc/xdg/mimeapps.list points http(s) here)
 flatpak install -y --system flathub io.github.kolunmi.Bazaar
 flatpak install -y --system flathub com.ranfdev.DistroShelf
 flatpak install -y --system flathub com.github.tchx84.Flatseal    # flatpak permission manager

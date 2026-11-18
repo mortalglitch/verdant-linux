@@ -1,12 +1,22 @@
-# Verdant — bake Loupe (org.gnome.Loupe) as the default image viewer.
+# Verdant — bake the default app associations for every user (system-wide
+# default; user overrides in ~/.config/mimeapps.list still win, and
+# `gio set` edits that file, so it never gets clobbered).
+#
+# Loupe is the default image viewer: image/* -> org.gnome.Loupe.desktop.
+# (Loupe is the flatpak baked in build_files/build.sh; the .desktop name is
+# the flatpak app id + .desktop.)
+#
+# Zen is the default web browser (app.zen_browser.zen flatpak baked in
+# build_files/build.sh; the Firefox RPM is removed there). xdg-open and GTK
+# "open with" for http(s) links and HTML files resolve through these.
 #
 # Why this file exists: nautilus (and all GTK apps) resolve the "open with"
 # target via GAppInfo, which only honors an EXPLICIT mimeapps.list entry and
-# never falls back to "first available handler". Installing the Loupe flatpak
-# alone registers it as a *possible* handler but sets no default, so
-# double-clicking an image shows the "no default application" popup. This file
-# fixes that. It is the system-wide (all-users) default; a per-user
-# ~/.config/mimeapps.list overrides it if you later want a different viewer.
+# never falls back to "first available handler". Installing the flatpaks
+# alone registers them as *possible* handlers but sets no default, so
+# double-clicking an image / clicking a link shows the "no default
+# application" popup. This file fixes that. A per-user ~/.config/mimeapps.list
+# overrides it if you later want a different viewer/browser.
 #
 # Copied to /etc/xdg/mimeapps.list by build.sh (`cp -avf system_files/. /`).
 # MIME list mirrors org.gnome.Loupe's .desktop MimeType= field exactly.
@@ -38,3 +48,8 @@ image/x-tga=org.gnome.Loupe.desktop
 image/x-win-bitmap=org.gnome.Loupe.desktop
 image/x-xbitmap=org.gnome.Loupe.desktop
 image/x-xpixmap=org.gnome.Loupe.desktop
+x-scheme-handler/http=app.zen_browser.zen.desktop
+x-scheme-handler/https=app.zen_browser.zen.desktop
+x-scheme-handler/about=app.zen_browser.zen.desktop
+x-scheme-handler/unknown=app.zen_browser.zen.desktop
+text/html=app.zen_browser.zen.desktop
