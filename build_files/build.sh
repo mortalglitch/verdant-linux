@@ -325,6 +325,20 @@ sed -i 's/^enabled=1/enabled=0/' /etc/yum.repos.d/lumine-capture.copr.repo
 #      nvidia-install.sh does not do (blacklist nouveau, enable nvidia modeset).
 if [[ -d /tmp/akmods-rpms ]]; then
   echo ">> installing NVIDIA Open driver + kernel module (from akmods)..."
+  # --- mesa multilib sync ------------------------------------------------
+  # The pinned base's x86_64 mesa can LAG the live Fedora repos: the base is
+  # frozen at pin time, but nvidia-install.sh pulls its i686 mesa multilib
+  # deps (mesa-dri-drivers.i686, mesa-vulkan-drivers.i686, ...) at the LIVE
+  # version. When the live mesa is newer, the i686 install file-conflicts with
+  # the older x86_64 on arch-independent files (/usr/share/drirc.d/*.conf,
+  # /usr/share/licenses/mesa-vulkan-drivers/...) and the dnf transaction
+  # aborts. Upgrade the x86_64 mesa stack to the live version first so both
+  # arches match. Fresh unpinned bases (Aurora/Bluefin) never hit this because
+  # their x86_64 mesa already tracks the live repos.
+  dnf5 -y upgrade mesa-dri-drivers mesa-vulkan-drivers mesa-filesystem \
+      mesa-libEGL mesa-libGL mesa-libgbm
+  # -----------------------------------------------------------------------
+
   # Installs the nvidia-open driver, the kernel-pinned kmod, and the addons
   # (CDI/persistenced/supergfxctl), sets up multilib + SELinux, and patches the
   # dracut config. IMAGE_NAME=silverblue opts in to supergfxctl (GPU switching).
