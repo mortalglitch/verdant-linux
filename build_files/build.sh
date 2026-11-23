@@ -156,6 +156,26 @@ EOF
 systemctl disable gdm
 systemctl enable greetd
 
+# Plymouth -> greeter DRM handoff race: greetd is After=plymouth-quit-wait,
+# but `plymouth --wait` can return before plymouthd has actually released the
+# display's DRM master. The Noctalia greeter attempts /dev/dri/card0 only
+# once — if plymouthd still holds it, the open fails with EBUSY, the greeter
+# exits, and the seat sits on a blank screen until someone reboots (seen on
+# the 2026.11.22 build: ~50s blank screen, the boot itself was otherwise
+# fine). Vendor drop-in makes greetd wait up to 10s for plymouthd to exit
+# before starting the greeter; if plymouth is absent (splash disabled) the
+# loop exits immediately, so this is a no-op elsewhere.
+install -d /usr/lib/systemd/system/greetd.service.d
+cat > /usr/libexec/greetd-plymouth-drain.sh <<'EOF'
+#!/bin/sh
+for i in $(seq 20); do pgrep -x plymouthd >/dev/null 2>&1 || break; sleep 0.5; done
+EOF
+chmod 755 /usr/libexec/greetd-plymouth-drain.sh
+cat > /usr/lib/systemd/system/greetd.service.d/plymouth-drain.conf <<'EOF'
+[Service]
+ExecStartPre=/usr/libexec/greetd-plymouth-drain.sh
+EOF
+
 ### Branding — Verdant (os-release + Noctalia Greeter)
 # os-release NAME/PRETTY_NAME drive three things: the installer welcome screen
 # and GRUB menu (bootc-image-builder bakes this into .buildstamp at ISO build
